@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import { 
   ShieldCheck, 
-  ShieldAlert, 
   UserCheck, 
   KeyRound, 
   Lock, 
   ChevronRight, 
-  Flame, 
-  FileCheck2, 
   AlertCircle,
   Eye,
   EyeOff,
-  Radio,
   CheckCircle2,
   Cpu
 } from 'lucide-react';
@@ -25,18 +21,11 @@ const DEFAULT_PERSONNEL = [
     email: 'thorne@h2shield.facility',
     role: 'SAFETY_ENGINEER',
     roleTitle: 'Plant Safety Engineer',
-    zone: 'All High-Pressure Buffers & Cryo Enclosures',
-    clearance: 'Level 4: Full Actuation & Emergency Shutdown',
+    clearance: 'L4: Full Actuation & ESD',
     accentColor: '#dc2626',
     bgColor: '#fef2f2',
     borderColor: '#fca5a5',
-    pin: '7001',
-    permissions: [
-      'Emergency Venting & Deluge Actuation',
-      'MAWP & Safety Threshold Overrides',
-      'Emergency Shutdown (ESD) Triggers',
-      '1-Click Safety Alert Resolution'
-    ]
+    pin: '7001'
   },
   {
     userId: 'usr-vance',
@@ -45,18 +34,11 @@ const DEFAULT_PERSONNEL = [
     email: 'vance@h2shield.facility',
     role: 'OPERATOR',
     roleTitle: 'Control Room Operator',
-    zone: 'Zone Alpha & Beta Monitoring',
-    clearance: 'Level 2: Telemetry & Alarm Acknowledgment',
+    clearance: 'L2: Telemetry & Acks',
     accentColor: '#059669',
     bgColor: '#ecfdf5',
     borderColor: '#6ee7b7',
-    pin: '4202',
-    permissions: [
-      'Live 4s Telemetry Streaming & Monitoring',
-      'Audible/Visual Alarm Acknowledgment',
-      'Operator Emergency Relief Actuation',
-      'Threshold Modification: RESTRICTED'
-    ]
+    pin: '4202'
   },
   {
     userId: 'usr-rostova',
@@ -65,18 +47,11 @@ const DEFAULT_PERSONNEL = [
     email: 'rostova@h2shield.facility',
     role: 'COMPLIANCE_AUDITOR',
     roleTitle: 'Lead Compliance Auditor',
-    zone: 'Regulatory & Inspection Division',
-    clearance: 'Level 1: Inspection & Compliance Sign-Off',
+    clearance: 'L1: Inspection & Audit',
     accentColor: '#0284c7',
     bgColor: '#f0f9ff',
     borderColor: '#bae6fd',
-    pin: '9103',
-    permissions: [
-      'NFPA 2 & ISO 19880-1 Audit Verification',
-      'Historical Sensor Log Data Export',
-      'Inspection Task Sign-Off & Verification',
-      'Actuator Hardware Control: RESTRICTED'
-    ]
+    pin: '9103'
   }
 ];
 
@@ -129,52 +104,41 @@ export const Login = ({ onLogin }) => {
 
   return (
     <div className="auth-page">
-      {/* Top Industrial Header & Brand */}
+      {/* Top SCADA Enclave Header */}
       <div className="auth-header-container">
-        <div className="auth-standard-pill">
-          <div className="auth-standard-icon">
-            <Flame size={12} color="#ffffff" />
-          </div>
-          <span>NFPA 2 & ISO 19880-1 INDUSTRIAL SCADA ACCESS GATEWAY</span>
-        </div>
-
         <h1 className="auth-title">
           Hydrogen Storage Facility Safety System
         </h1>
         <p className="auth-subtitle">
-          Role-Based Access Control (RVAC) Security Verification with HMAC-SHA256 JWT Authentication.
+          NFPA 2 &amp; ISO 19880-1 SCADA Access Control &bull; HMAC-SHA256 JWT Authorization
         </p>
       </div>
 
-      {/* Main Container Card: Form + Station Selector */}
+      {/* Main Enclave Grid */}
       <div className="auth-layout-grid">
-        {/* Left Side: Formal JWT Credentials Sign-in */}
+        {/* Left Side: Direct Credentials Sign-in */}
         <div className="auth-card">
           <div className="auth-card-header">
             <div>
-              <h2 className="auth-card-title">
-                Console Personnel Login
-              </h2>
-              <div className="auth-card-desc">
-                Authenticate with authorized facility credentials
-              </div>
+              <h2 className="auth-card-title">Console Personnel Login</h2>
+              <div className="auth-card-desc">Enter operator credentials or select a certified station</div>
             </div>
             <div className="auth-session-chip">
-              <Cpu size={13} />
-              <span>JWT 12H Session</span>
+              <Cpu size={12} />
+              <span>JWT 12H</span>
             </div>
           </div>
 
           {errorMsg && (
             <div className="auth-alert-box auth-alert-error">
-              <AlertCircle size={16} />
+              <AlertCircle size={15} />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {authSuccess && (
             <div className="auth-alert-box auth-alert-success">
-              <CheckCircle2 size={16} />
+              <CheckCircle2 size={15} />
               <span>Clearance authorized. Initializing supervisory dashboard...</span>
             </div>
           )}
@@ -186,7 +150,7 @@ export const Login = ({ onLogin }) => {
                 <span>Facility Operator ID / Email</span>
               </label>
               <div className="auth-input-container">
-                <UserCheck size={16} className="auth-input-icon" />
+                <UserCheck size={15} className="auth-input-icon" />
                 <input
                   id="input-operator-id"
                   type="text"
@@ -201,16 +165,14 @@ export const Login = ({ onLogin }) => {
             {/* PIN / Password Input */}
             <div className="auth-form-group">
               <div className="auth-form-label">
-                <label htmlFor="input-pin">
-                  Security Access PIN / Password
-                </label>
-                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                <label htmlFor="input-pin">Security PIN</label>
+                <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                   Default: <strong style={{ color: 'var(--color-primary)' }}>{selectedUser.pin}</strong>
                 </span>
               </div>
 
               <div className="auth-input-container">
-                <KeyRound size={16} className="auth-input-icon" />
+                <KeyRound size={15} className="auth-input-icon" />
                 <input
                   id="input-pin"
                   type={showPin ? 'text' : 'password'}
@@ -218,7 +180,7 @@ export const Login = ({ onLogin }) => {
                   value={enteredPin}
                   onChange={(e) => setEnteredPin(e.target.value)}
                   maxLength={12}
-                  placeholder="Enter 4-digit security PIN"
+                  placeholder="Enter security PIN"
                 />
                 <button
                   type="button"
@@ -226,7 +188,7 @@ export const Login = ({ onLogin }) => {
                   onClick={() => setShowPin(!showPin)}
                   aria-label={showPin ? "Hide PIN" : "Show PIN"}
                 >
-                  {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPin ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
@@ -240,19 +202,19 @@ export const Login = ({ onLogin }) => {
               }}
             >
               <div>
-                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: selectedUser.accentColor, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: selectedUser.accentColor, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Target Role Clearance
                 </div>
-                <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                  {selectedUser.name} <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({selectedUser.badge})</span>
+                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                  {selectedUser.name} <span className="mono" style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>({selectedUser.badge})</span>
                 </div>
               </div>
               <span style={{
                 background: selectedUser.accentColor,
                 color: '#ffffff',
-                fontSize: '0.72rem',
+                fontSize: '0.68rem',
                 fontWeight: 700,
-                padding: '3px 8px',
+                padding: '2px 7px',
                 borderRadius: 'var(--radius-sm)'
               }}>
                 {selectedUser.role}
@@ -266,25 +228,25 @@ export const Login = ({ onLogin }) => {
               className="auth-submit-btn"
               disabled={isAuthenticating}
             >
-              <Lock size={16} />
+              <Lock size={15} />
               <span>{isAuthenticating ? 'Verifying Token...' : 'Authenticate & Enter Safety Console'}</span>
             </button>
           </form>
 
           {/* Security Assurance Badge */}
           <div className="auth-guarantee-note">
-            <ShieldCheck size={14} color="var(--color-success)" />
+            <ShieldCheck size={13} color="var(--color-success)" />
             <span>Encrypted with HMAC-SHA256 Signed JSON Web Tokens</span>
           </div>
         </div>
 
-        {/* Right Side: Quick Personnel Station Badges */}
+        {/* Right Side: Quick Personnel Station Cards */}
         <div className="auth-personnel-column">
-          <div style={{ marginBottom: 4 }}>
-            <h2 style={{ fontSize: '1.18rem', fontWeight: 700, margin: '0 0 4px 0', color: 'var(--text-main)' }}>
+          <div style={{ marginBottom: 2 }}>
+            <h2 style={{ fontSize: '1.08rem', fontWeight: 700, margin: '0 0 2px 0', color: 'var(--text-main)' }}>
               Facility Authorized Personnel
             </h2>
-            <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
               Select a certified role card for instantaneous clearance
             </div>
           </div>
@@ -299,55 +261,51 @@ export const Login = ({ onLogin }) => {
                 onClick={() => handleSelectPersonnel(person)}
                 style={{
                   borderColor: isSelected ? person.accentColor : 'var(--border-color)',
-                  boxShadow: isSelected ? `0 8px 20px -4px ${person.accentColor}30` : undefined
+                  boxShadow: isSelected ? `0 4px 14px -2px ${person.accentColor}25` : undefined
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                     <span className="mono" style={{
                       fontWeight: 700,
-                      fontSize: '0.75rem',
+                      fontSize: '0.72rem',
                       background: 'var(--bg-card-subtle)',
                       color: 'var(--text-muted)',
-                      padding: '2px 7px',
+                      padding: '2px 6px',
                       borderRadius: 'var(--radius-sm)',
                       border: '1px solid var(--border-color)'
                     }}>
                       {person.badge}
                     </span>
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
+                    <h3 style={{ fontSize: '0.98rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
                       {person.name}
                     </h3>
                   </div>
 
                   <span style={{
-                    fontSize: '0.72rem',
+                    fontSize: '0.68rem',
                     fontWeight: 700,
                     color: person.accentColor,
                     background: person.bgColor,
-                    padding: '2px 8px',
+                    padding: '2px 7px',
                     borderRadius: 9999
                   }}>
                     {person.role}
                   </span>
                 </div>
 
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10 }}>
-                  {person.roleTitle} &bull; <span style={{ color: 'var(--color-primary)' }}>{person.email}</span>
-                </div>
-
-                {/* Clearance tag */}
-                <div style={{
-                  fontSize: '0.76rem',
-                  fontWeight: 600,
-                  color: person.accentColor,
-                  background: person.bgColor,
-                  padding: '4px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  marginBottom: 12,
-                  display: 'inline-block'
-                }}>
-                  {person.clearance}
+                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>{person.roleTitle} &bull; {person.email}</span>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    color: person.accentColor,
+                    background: person.bgColor,
+                    padding: '1px 6px',
+                    borderRadius: 'var(--radius-sm)'
+                  }}>
+                    {person.clearance}
+                  </span>
                 </div>
 
                 {/* Quick Login Button */}
@@ -367,7 +325,7 @@ export const Login = ({ onLogin }) => {
                   }}
                 >
                   <span>Authorize as {person.name.split(' ')[0]}</span>
-                  <ChevronRight size={14} />
+                  <ChevronRight size={13} />
                 </button>
               </div>
             );
