@@ -58,19 +58,21 @@ export const TelemetryAreaChart = ({ vessels, selectedVesselId, onSelectVessel }
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
 
-  // Compute Adaptive Scales (Auto-Zoom prevents flat lines)
+  // Compute Adaptive Scales (Auto-Zoom calibrated to avoid micro-noise magnification)
   const pressures = telemetryHistory.map(d => d.pressureBar || 0);
   const dataMin = pressures.length > 0 ? Math.min(...pressures) : (targetVessel?.currentPressureBar || 500);
   const dataMax = pressures.length > 0 ? Math.max(...pressures) : (targetVessel?.currentPressureBar || 500);
   
   let minP, maxP;
   if (zoomMode === 'auto') {
-    // Dynamic auto-scaling zoomed directly into the active pressure wave
-    const span = Math.max(8, dataMax - dataMin);
-    minP = Math.floor(Math.max(0, dataMin - span * 0.4));
-    maxP = Math.ceil(dataMax + span * 0.4);
+    // Industrial auto-scale: minimum span 28 bar or 8% MAWP prevents flat lines without over-magnifying 0.2 bar sensor noise
+    const minSpan = Math.max(28, (targetVessel?.maxPressureBar || 700) * 0.08);
+    const span = Math.max(minSpan, (dataMax - dataMin) * 1.35);
+    const mid = (dataMax + dataMin) / 2;
+    minP = Math.max(0, Math.floor(mid - span / 2));
+    maxP = Math.ceil(mid + span / 2);
   } else {
-    // Full scale 0 to MAWP
+    // Full scale 0 to MAWP + 5%
     minP = 0;
     maxP = Math.ceil((targetVessel?.maxPressureBar || 700) * 1.05);
   }
@@ -86,22 +88,67 @@ export const TelemetryAreaChart = ({ vessels, selectedVesselId, onSelectVessel }
     return padding.top + innerHeight - ((clamped - minP) / range) * innerHeight;
   };
 
-  // Build Smooth Cubic Bezier Spline Path
-  const buildSmoothPath = (points) => {
-    if (points.length === 0) return '';
-    if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  // Fritsch-Carlson Monotone Cubic Spline (D3 curveMonotoneX implementation)
+  const buildMonotoneXPath = (points) => {
+    const n = points.length;
+    if (n === 0) return '';
+    if (n === 1) return `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+    if (n === 2) {
+      return `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)} L ${points[1].x.toFixed(1)} ${points[1].y.toFixed(1)}`;
+    }
 
-    let path = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[i === 0 ? i : i - 1];
+    // 1. Calculate secant slopes (deltas)
+    const dx = new Float64Array(n - 1);
+    const dy = new Float64Array(n - 1);
+    const m = new Float64Array(n - 1);
+
+    for (let i = 0; i < n - 1; i++) {
+      dx[i] = Math.max(0.001, points[i + 1].x - points[i].x);
+      dy[i] = points[i + 1].y - points[i].y;
+      m[i] = dy[i] / dx[i];
+    }
+
+    // 2. Tangents (initial weighted harmonic average)
+    const d = new Float64Array(n);
+    d[0] = m[0];
+    d[n - 1] = m[n - 2];
+
+    for (let i = 1; i < n - 1; i++) {
+      if (m[i - 1] * m[i] <= 0) {
+        d[i] = 0; // Flat tangent at local extrema guarantees monotonicity without overshoot
+      } else {
+        const dxSum = dx[i - 1] + dx[i];
+        d[i] = (3 * dxSum) / ((2 * dx[i] + dx[i - 1]) / m[i - 1] + (dx[i] + 2 * dx[i - 1]) / m[i]);
+      }
+    }
+
+    // 3. Fritsch-Carlson refinement pass
+    for (let i = 0; i < n - 1; i++) {
+      if (dy[i] === 0) {
+        d[i] = 0;
+        d[i + 1] = 0;
+      } else {
+        const a = d[i] / m[i];
+        const b = d[i + 1] / m[i];
+        const h = a * a + b * b;
+        if (h > 9) {
+          const tau = 3 / Math.sqrt(h);
+          d[i] = tau * a * m[i];
+          d[i + 1] = tau * b * m[i];
+        }
+      }
+    }
+
+    // 4. Construct SVG Cubic Bezier spline commands
+    let path = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+    for (let i = 0; i < n - 1; i++) {
       const p1 = points[i];
       const p2 = points[i + 1];
-      const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
-
-      const cp1x = p1.x + (p2.x - p0.x) / 6;
-      const cp1y = p1.y + (p2.y - p0.y) / 6;
-      const cp2x = p2.x - (p3.x - p1.x) / 6;
-      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      const segDx = (p2.x - p1.x) / 3;
+      const cp1x = p1.x + segDx;
+      const cp1y = p1.y + d[i] * segDx;
+      const cp2x = p2.x - segDx;
+      const cp2y = p2.y - d[i + 1] * segDx;
 
       path += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
     }
@@ -116,9 +163,10 @@ export const TelemetryAreaChart = ({ vessels, selectedVesselId, onSelectVessel }
     timestamp: d.timestamp
   }));
 
-  const smoothLinePath = buildSmoothPath(svgCoords);
-  const smoothAreaPath = svgCoords.length > 0
-    ? `${smoothLinePath} L ${svgCoords[svgCoords.length - 1].x} ${padding.top + innerHeight} L ${svgCoords[0].x} ${padding.top + innerHeight} Z`
+  const monotoneLinePath = buildMonotoneXPath(svgCoords);
+  const bottomY = padding.top + innerHeight;
+  const monotoneAreaPath = svgCoords.length > 0
+    ? `${monotoneLinePath} L ${svgCoords[svgCoords.length - 1].x.toFixed(1)} ${bottomY} L ${svgCoords[0].x.toFixed(1)} ${bottomY} Z`
     : '';
 
   // Warning threshold
@@ -139,6 +187,17 @@ export const TelemetryAreaChart = ({ vessels, selectedVesselId, onSelectVessel }
     maxP
   ];
 
+  // Time Axis Ticks (4 points across the history span)
+  const timeTicks = [
+    { label: 'T-30m', x: padding.left },
+    { label: 'T-20m', x: padding.left + innerWidth * 0.33 },
+    { label: 'T-10m', x: padding.left + innerWidth * 0.66 },
+    { label: 'Live Now', x: padding.left + innerWidth }
+  ];
+
+  const lastCoord = svgCoords.length > 0 ? svgCoords[svgCoords.length - 1] : null;
+  const hoverCoord = hoverIndex !== null && svgCoords[hoverIndex] ? svgCoords[hoverIndex] : null;
+
   return (
     <div className="panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
@@ -148,7 +207,7 @@ export const TelemetryAreaChart = ({ vessels, selectedVesselId, onSelectVessel }
           <div>
             <div className="panel-title">Live Tank Pressure Stream</div>
             <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>
-              Real-time wave telemetry with dynamic auto-scaling
+              D3 MonotoneX spline telemetry with gradient underlay
             </div>
           </div>
         </div>
@@ -162,7 +221,7 @@ export const TelemetryAreaChart = ({ vessels, selectedVesselId, onSelectVessel }
             title={zoomMode === 'auto' ? 'Switch to Full 0-MAWP Scale' : 'Switch to Auto-Zoom Wave'}
           >
             {zoomMode === 'auto' ? <Maximize2 size={12} /> : <Minimize2 size={12} />}
-            <span>{zoomMode === 'auto' ? 'Zoom Wave' : 'Full Scale'}</span>
+            <span>{zoomMode === 'auto' ? 'Wave Zoom' : 'Full Scale'}</span>
           </button>
 
           {/* Target Vessel Picker */}
@@ -205,20 +264,42 @@ export const TelemetryAreaChart = ({ vessels, selectedVesselId, onSelectVessel }
 
       {/* SVG Chart */}
       <div className="panel-body" style={{ flex: 1, padding: '12px 16px', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ width: '100%', position: 'relative' }}>
+        <div 
+          style={{ width: '100%', position: 'relative' }}
+          onMouseLeave={() => setHoverIndex(null)}
+        >
           <svg 
             viewBox={`0 0 ${width} ${height}`} 
             style={{ width: '100%', height: 'auto', overflow: 'visible', userSelect: 'none' }}
+            onMouseMove={(e) => {
+              if (svgCoords.length === 0) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              const mouseSvgX = ((e.clientX - rect.left) / rect.width) * width;
+              // Find closest point by x coordinate
+              let closestIdx = 0;
+              let minDiff = Infinity;
+              for (let i = 0; i < svgCoords.length; i++) {
+                const diff = Math.abs(svgCoords[i].x - mouseSvgX);
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closestIdx = i;
+                }
+              }
+              setHoverIndex(closestIdx);
+            }}
           >
             <defs>
-              <linearGradient id="pressureGradientNominal" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#0284c7" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#0284c7" stopOpacity="0.02" />
+              {/* Rich D3 MonotoneX Gradient Underlays */}
+              <linearGradient id="monotoneGradientNominal" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#0284c7" stopOpacity="0.35" />
+                <stop offset="45%" stopColor="#0ea5e9" stopOpacity="0.14" />
+                <stop offset="100%" stopColor="#0284c7" stopOpacity="0.00" />
               </linearGradient>
 
-              <linearGradient id="pressureGradientCritical" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#ef4444" stopOpacity="0.5" />
-                <stop offset="100%" stopColor="#ef4444" stopOpacity="0.05" />
+              <linearGradient id="monotoneGradientCritical" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#ef4444" stopOpacity="0.40" />
+                <stop offset="45%" stopColor="#f87171" stopOpacity="0.16" />
+                <stop offset="100%" stopColor="#ef4444" stopOpacity="0.00" />
               </linearGradient>
             </defs>
 
@@ -250,7 +331,30 @@ export const TelemetryAreaChart = ({ vessels, selectedVesselId, onSelectVessel }
               );
             })}
 
-            {/* Warning Envelope Reference Line if in current view */}
+            {/* X-Axis Bottom Baseline & Time Coordinates */}
+            <line 
+              x1={padding.left} 
+              y1={bottomY} 
+              x2={width - padding.right} 
+              y2={bottomY} 
+              stroke="#cbd5e1" 
+              strokeWidth="1"
+            />
+            {timeTicks.map((tick, idx) => (
+              <text 
+                key={idx}
+                x={tick.x} 
+                y={bottomY + 14} 
+                textAnchor={idx === 0 ? 'start' : idx === timeTicks.length - 1 ? 'end' : 'middle'} 
+                fontSize="9" 
+                fill="#94a3b8" 
+                fontFamily="monospace"
+              >
+                {tick.label}
+              </text>
+            ))}
+
+            {/* Warning Envelope Reference Line */}
             {isWarningInView && (
               <g>
                 <line 
@@ -276,59 +380,71 @@ export const TelemetryAreaChart = ({ vessels, selectedVesselId, onSelectVessel }
               </g>
             )}
 
-            {/* Smooth Wave Area Fill */}
-            {smoothAreaPath && (
+            {/* D3 MonotoneX Smooth Gradient Underlay */}
+            {monotoneAreaPath && (
               <path 
-                d={smoothAreaPath} 
-                fill={isBreached ? 'url(#pressureGradientCritical)' : 'url(#pressureGradientNominal)'} 
+                d={monotoneAreaPath} 
+                fill={isBreached ? 'url(#monotoneGradientCritical)' : 'url(#monotoneGradientNominal)'} 
               />
             )}
 
-            {/* Smooth Wave Line */}
-            {smoothLinePath && (
+            {/* D3 MonotoneX Curve Spline Path */}
+            {monotoneLinePath && (
               <path 
-                d={smoothLinePath} 
+                d={monotoneLinePath} 
                 fill="none" 
                 stroke={isBreached ? '#ef4444' : '#0284c7'} 
-                strokeWidth="2.75" 
+                strokeWidth="2.5" 
                 strokeLinecap="round" 
                 strokeLinejoin="round" 
               />
             )}
 
-            {/* Interactive Data Points */}
-            {svgCoords.map((pt, i) => {
-              const isHovered = hoverIndex === i;
-              const isLast = i === svgCoords.length - 1;
+            {/* Interactive Hover Crosshair Hairline */}
+            {hoverCoord && (
+              <g>
+                <line
+                  x1={hoverCoord.x}
+                  y1={padding.top}
+                  x2={hoverCoord.x}
+                  y2={bottomY}
+                  stroke="#94a3b8"
+                  strokeDasharray="3 3"
+                  strokeWidth="1"
+                />
+                <circle
+                  cx={hoverCoord.x}
+                  cy={hoverCoord.y}
+                  r="5"
+                  fill={isBreached ? '#ef4444' : '#0284c7'}
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                />
+              </g>
+            )}
 
-              return (
-                <g key={i}>
-                  {/* Pulsing ring on latest reading */}
-                  {isLast && (
-                    <circle
-                      cx={pt.x}
-                      cy={pt.y}
-                      r="7"
-                      fill="none"
-                      stroke={isBreached ? '#ef4444' : '#0284c7'}
-                      strokeWidth="1.5"
-                      opacity="0.6"
-                    />
-                  )}
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r={isHovered ? 5.5 : isLast ? 4 : 2.5}
-                    fill={isBreached ? '#ef4444' : '#0284c7'}
-                    stroke="#ffffff"
-                    strokeWidth={isHovered || isLast ? 2 : 1}
-                    style={{ cursor: 'pointer' }}
-                    onMouseEnter={() => setHoverIndex(i)}
-                    onMouseLeave={() => setHoverIndex(null)}
-                  />
-                </g>
-              );
-            })}
+            {/* Live Pulsing Beacon on Latest Telemetry Point */}
+            {lastCoord && !hoverCoord && (
+              <g>
+                <circle
+                  cx={lastCoord.x}
+                  cy={lastCoord.y}
+                  r="8"
+                  fill="none"
+                  stroke={isBreached ? '#ef4444' : '#0284c7'}
+                  strokeWidth="1.5"
+                  opacity="0.45"
+                />
+                <circle
+                  cx={lastCoord.x}
+                  cy={lastCoord.y}
+                  r="3.5"
+                  fill={isBreached ? '#ef4444' : '#0284c7'}
+                  stroke="#ffffff"
+                  strokeWidth="1.5"
+                />
+              </g>
+            )}
           </svg>
         </div>
 

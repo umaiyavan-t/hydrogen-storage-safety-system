@@ -103,3 +103,21 @@ test('JWT Security: signs and verifies industrial session tokens with correct cl
     jwt.verify(token, 'invalid-secret');
   });
 });
+
+test('SCADA Progressive Drill Engine: ramps over and slowly restores baseline', async () => {
+  const startTelemetrySimulator = require('./services/simulator');
+
+  // Trigger Overpressure scenario
+  const drill = await startTelemetrySimulator.triggerDrill('OVERPRESSURE');
+  assert.equal(drill.type, 'OVERPRESSURE');
+  assert.equal(drill.phase, 'RAMPING_UP');
+  assert.equal(drill.totalSteps, 5);
+  assert.equal(drill.targetPressure, 694.5);
+
+  // Trigger Safe Reset
+  const resetDrill = await startTelemetrySimulator.triggerDrill('RESET');
+  assert.equal(resetDrill.type, 'RESET');
+  assert.equal(resetDrill.phase, 'RESTORING');
+  assert.equal(resetDrill.totalSteps, 5);
+  assert.equal(startTelemetrySimulator.getActiveDrill().phase, 'RESTORING');
+});

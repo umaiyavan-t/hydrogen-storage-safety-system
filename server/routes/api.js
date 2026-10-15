@@ -6,6 +6,7 @@ const Telemetry = require('../models/Telemetry');
 const Alert = require('../models/Alert');
 const MaintenanceTask = require('../models/MaintenanceTask');
 const ComplianceAudit = require('../models/ComplianceAudit');
+const startTelemetrySimulator = require('../services/simulator');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'h2-super-secret-plant-key-2026';
 
@@ -168,164 +169,23 @@ router.get('/overview', async (req, res) => {
   }
 });
 
-// 1b. Crisis & Scenario Simulator (For Live Demonstrations & Testing)
+// 1b. Crisis & Scenario Simulator (Progressive Dynamic Ramp & Safe Reset)
 router.post('/simulator/scenario', async (req, res) => {
   try {
     const { scenario } = req.body;
     const io = req.app.get('io');
-    let message = '';
-
-    if (scenario === 'OVERPRESSURE') {
-      const vessel = await Vessel.findOne({ vesselId: 'H2-TNK-01' });
-      if (vessel) {
-        vessel.currentPressureBar = 694.5;
-        vessel.status = 'CRITICAL';
-        await vessel.save();
-
-        const alert = new Alert({
-          alertId: `ALT-${Date.now().toString().slice(-6)}`,
-          vesselId: vessel.vesselId,
-          vesselName: vessel.name,
-          zone: vessel.zone,
-          severity: 'CRITICAL',
-          metric: 'Safety Threshold Breach: High Pressure Spike',
-          triggerValue: '694.5 bar',
-          thresholdValue: `Ceiling: ${vessel.maxPressureBar} bar (Warning: ${vessel.warningPressureBar} bar)`,
-          message: 'CRITICAL PRESSURE SPIKE: Vessel pressure rapidly approaching Maximum Allowable Working Pressure. Immediate venting required!'
-        });
-        await alert.save();
-
-        if (io) {
-          io.emit('vessel:update', vessel);
-          io.emit('alert:new', alert);
-        }
-      }
-      message = 'Simulated Overpressure Spike on H2-TNK-01 (694.5 bar)';
-    } else if (scenario === 'LEAK') {
-      const vessel = await Vessel.findOne({ vesselId: 'H2-TNK-02' });
-      if (vessel) {
-        vessel.currentH2ConcentrationPpm = 7400;
-        vessel.lelPercentage = 18.5;
-        vessel.status = 'CRITICAL';
-        await vessel.save();
-
-        const alert = new Alert({
-          alertId: `ALT-${Date.now().toString().slice(-6)}`,
-          vesselId: vessel.vesselId,
-          vesselName: vessel.name,
-          zone: vessel.zone,
-          severity: 'CRITICAL',
-          metric: 'Flammable Gas Dispersion Leak',
-          triggerValue: '18.5% LEL (7,400 ppm)',
-          thresholdValue: 'Safety Limit: 10.0% LEL',
-          message: 'UNCONTROLLED HYDROGEN DISPERSION DETECTED: Perimeter optical sensors in Zone Alpha triggered. Water deluge activated.'
-        });
-        await alert.save();
-
-        if (io) {
-          io.emit('vessel:update', vessel);
-          io.emit('alert:new', alert);
-        }
-      }
-      message = 'Simulated Flammable H2 Gas Leak on H2-TNK-02 (18.5% LEL)';
-    } else if (scenario === 'SENSOR_FAIL') {
-      const vessel = await Vessel.findOne({ vesselId: 'H2-TNK-04' });
-      if (vessel) {
-        vessel.sensorHealthPercent = 34;
-        vessel.status = 'WARNING';
-        await vessel.save();
-
-        const alert = new Alert({
-          alertId: `ALT-${Date.now().toString().slice(-6)}`,
-          vesselId: vessel.vesselId,
-          vesselName: vessel.name,
-          zone: vessel.zone,
-          severity: 'WARNING',
-          metric: 'Sensor Telemetry Degradation',
-          triggerValue: '34% Signal Integrity',
-          thresholdValue: 'Threshold: 80%',
-          message: 'Electrochemical sensor channel drift and heartbeat loss on manifold PT-401.'
-        });
-        await alert.save();
-
-        if (io) {
-          io.emit('vessel:update', vessel);
-          io.emit('alert:new', alert);
-        }
-      }
-      message = 'Simulated Sensor Telemetry Degradation on H2-TNK-04';
-    } else if (scenario === 'ESD_VENT') {
-      const vessels = await Vessel.find();
-      for (const v of vessels) {
-        if (v.currentPressureBar > 300) {
-          v.reliefValveOpen = true;
-          v.currentPressureBar = Math.max(v.currentPressureBar - 75, 200);
-          if (v.status === 'CRITICAL') v.status = 'WARNING';
-          await v.save();
-          if (io) io.emit('vessel:update', v);
-        }
-      }
-
-      const alert = new Alert({
-        alertId: `ESD-${Date.now().toString().slice(-6)}`,
-        vesselId: 'FACILITY-ALL',
-        vesselName: 'All Storage Vessels',
-        zone: 'Site Wide',
-        severity: 'INFO',
-        metric: 'Emergency Shutdown (ESD) Vent Actuated',
-        triggerValue: 'Operator ESD Command',
-        thresholdValue: 'Manual Safety Interlock',
-        message: 'Facility emergency pressure relief venting actuated. High-pressure manifolds depressurizing to safe flare stack.'
-      });
-      await alert.save();
-      if (io) io.emit('alert:new', alert);
-      message = 'Emergency Depressurization Vents Actuated Across Storage Pad';
-    } else if (scenario === 'RESET') {
-      const vessels = await Vessel.find();
-      const defaultPressures = {
-        'H2-TNK-01': 585.0, // max 700 bar (Type IV Buffer)
-        'H2-TNK-02': 18.2,  // max 25 bar (Cryo-Liquid Dewar)
-        'H2-TNK-03': 565.0, // max 700 bar (Type IV Buffer)
-        'H2-TNK-04': 295.0, // max 360 bar (Dispenser Header)
-        'H2-TNK-05': 185.0, // max 230 bar (Cavern Buffer)
-        'H2-TNK-06': 260.0  // max 350 bar (Recovery Bank)
-      };
-
-      const defaultTemperatures = {
-        'H2-TNK-01': 24.2,
-        'H2-TNK-02': -251.5, // Cryogenic liquid dewar (-253°C nominal)
-        'H2-TNK-03': 23.8,
-        'H2-TNK-04': 22.4,
-        'H2-TNK-05': 16.5,  // Cavern buffer
-        'H2-TNK-06': 21.0
-      };
-
-      for (const v of vessels) {
-        v.currentPressureBar = defaultPressures[v.vesselId] || 450;
-        v.currentStockKg = Math.max(10, Math.round(v.capacityKg * Math.min(1, v.currentPressureBar / v.maxPressureBar)));
-        v.currentTempC = defaultTemperatures[v.vesselId] || 22.5;
-        v.currentH2ConcentrationPpm = 45;
-        v.lelPercentage = 0.11;
-        v.sensorHealthPercent = 99;
-        v.reliefValveOpen = false;
-        v.status = 'NOMINAL';
-        await v.save();
-        if (io) io.emit('vessel:update', v);
-      }
-
-      // Mark unacknowledged alerts as resolved
-      await Alert.updateMany({ resolved: false }, { $set: { resolved: true, resolvedAt: new Date() } });
-
-      message = 'Facility Reset: All vessels, sensors and valves restored to nominal baseline';
-    }
+    
+    // Trigger progressive drill ramp or safe baseline restore
+    const drill = await startTelemetrySimulator.triggerDrill(scenario, io);
 
     const updatedVessels = await Vessel.find().sort({ vesselId: 1 });
     const updatedAlerts = await Alert.find().sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      message,
+      message: drill?.description || `Scenario ${scenario} initiated`,
       data: {
+        drill,
         vessels: updatedVessels,
         alerts: updatedAlerts
       }
@@ -333,6 +193,13 @@ router.post('/simulator/scenario', async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+});
+
+router.get('/simulator/drill', (req, res) => {
+  res.json({
+    success: true,
+    data: startTelemetrySimulator.getActiveDrill()
+  });
 });
 
 // 2. Vessel routes

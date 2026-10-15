@@ -1,17 +1,28 @@
-import React, { useState } from 'react';
-import { ShieldAlert, Wind, Droplets, Flame, FlaskConical, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldAlert, Wind, Droplets, Flame, FlaskConical, RotateCcw, Activity } from 'lucide-react';
+import { socket } from '../services/socket';
 
 export const SafetyControlPanel = ({ 
   vessels, 
   onTriggerESD, 
   facilityStatus 
 }) => {
-  const [activeDrill, setActiveDrill] = useState(null);
+  const [drillStatus, setDrillStatus] = useState(null);
   const ventingCount = vessels.filter(v => v.reliefValveOpen).length;
   const criticalCount = vessels.filter(v => v.status === 'CRITICAL').length;
 
+  useEffect(() => {
+    const handleDrillStatus = (status) => {
+      setDrillStatus(status);
+    };
+
+    socket.on('simulator:drill_status', handleDrillStatus);
+    return () => {
+      socket.off('simulator:drill_status', handleDrillStatus);
+    };
+  }, []);
+
   const handleDrill = async (drillKey) => {
-    setActiveDrill(drillKey);
     if (onTriggerESD) {
       await onTriggerESD(drillKey);
     }
@@ -35,7 +46,44 @@ export const SafetyControlPanel = ({
         </span>
       </div>
 
-      <div className="panel-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="panel-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Active SCADA Progressive Drill Banner */}
+        {drillStatus && (
+          <div style={{
+            background: drillStatus.phase === 'RESTORING' ? '#f0fdf4' : '#fff7ed',
+            border: `1px solid ${drillStatus.phase === 'RESTORING' ? '#bbf7d0' : '#fed7aa'}`,
+            borderRadius: 'var(--radius-md)',
+            padding: '8px 12px',
+            fontSize: '0.74rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: drillStatus.phase === 'RESTORING' ? '#15803d' : '#c2410c' }}>
+                <Activity size={13} className="spin-slow" />
+                <span>
+                  {drillStatus.phase === 'RAMPING_UP' && 'Progressive Escalation'}
+                  {drillStatus.phase === 'HOLDING' && 'Active Drill (Peak)'}
+                  {drillStatus.phase === 'RESTORING' && 'Controlled Safe Reset'}
+                </span>
+              </div>
+              <span className="mono" style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                Step {drillStatus.step}/{drillStatus.totalSteps}
+              </span>
+            </div>
+            <div style={{ color: 'var(--text-main)', fontSize: '0.72rem', marginBottom: 6 }}>
+              {drillStatus.description}
+            </div>
+            {/* Step Progress Bar */}
+            <div style={{ width: '100%', height: 4, background: '#e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                width: `${Math.min(100, (drillStatus.step / drillStatus.totalSteps) * 100)}%`,
+                background: drillStatus.phase === 'RESTORING' ? '#16a34a' : '#ea580c',
+                transition: 'width 0.4s ease'
+              }} />
+            </div>
+          </div>
+        )}
+
         {/* ESD Vent Action Card */}
         <div style={{ 
           background: ventingCount > 0 ? '#fef2f2' : '#f8fafc', 
@@ -95,7 +143,7 @@ export const SafetyControlPanel = ({
                 SCADA Drill Scenarios
               </span>
             </div>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Plant Simulation Mode</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Progressive Ramp Mode</span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
@@ -103,7 +151,7 @@ export const SafetyControlPanel = ({
               type="button"
               className="btn btn-sm btn-secondary"
               onClick={() => handleDrill('OVERPRESSURE')}
-              title="Inject Overpressure Spike (695 bar)"
+              title="Progressive Overpressure Ramp toward 695 bar (NFPA 2 §6.3)"
               style={{ fontSize: '0.75rem', padding: '6px 8px', justifyContent: 'flex-start', gap: 6 }}
             >
               <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#dc2626', display: 'inline-block' }} />
@@ -114,7 +162,7 @@ export const SafetyControlPanel = ({
               type="button"
               className="btn btn-sm btn-secondary"
               onClick={() => handleDrill('LEAK')}
-              title="Simulate Flammable H2 Dispersion (18.5% LEL)"
+              title="Progressive Flammable Gas Dispersion Ramp (ISO 19880 §9.2)"
               style={{ fontSize: '0.75rem', padding: '6px 8px', justifyContent: 'flex-start', gap: 6 }}
             >
               <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }} />
@@ -125,7 +173,7 @@ export const SafetyControlPanel = ({
               type="button"
               className="btn btn-sm btn-secondary"
               onClick={() => handleDrill('SENSOR_FAIL')}
-              title="Simulate Sensor Heartbeat Loss"
+              title="Progressive Sensor Signal Degradation (ISA-18.2)"
               style={{ fontSize: '0.75rem', padding: '6px 8px', justifyContent: 'flex-start', gap: 6 }}
             >
               <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#a855f7', display: 'inline-block' }} />
@@ -136,7 +184,7 @@ export const SafetyControlPanel = ({
               type="button"
               className="btn btn-sm btn-secondary"
               onClick={() => handleDrill('RESET')}
-              title="Reset All Vessels & Alarms to Nominal Baseline"
+              title="Controlled Safe Reset: Smoothly Ramps Plant Back to Nominal"
               style={{ fontSize: '0.75rem', padding: '6px 8px', justifyContent: 'flex-start', gap: 6 }}
             >
               <RotateCcw size={12} color="#059669" />
