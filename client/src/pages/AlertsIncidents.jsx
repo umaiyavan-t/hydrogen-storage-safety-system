@@ -30,7 +30,7 @@ export const AlertsIncidents = ({ alerts, onAcknowledgeAlert, onResolveAlert }) 
             <Search size={16} style={{ color: 'var(--text-dim)' }} />
             <input 
               type="text"
-              placeholder="Search alert ID, vessel, keyword..."
+              aria-label="Filter alerts and incidents"
               className="form-input"
               style={{ width: '100%' }}
               value={searchTerm}

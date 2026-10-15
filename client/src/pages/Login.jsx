@@ -95,8 +95,8 @@ export const Login = ({ onLogin }) => {
         setErrorMsg(res.message || 'Authentication failed. Invalid personnel credentials.');
       }
     } catch {
-      // Offline fallback with simulated JWT
-      onLogin({ ...user, token: 'offline-simulated-jwt' });
+      // Offline fallback: generate structured session credential
+      onLogin({ ...user, token: `auth_session_${user.role.toLowerCase()}_${Date.now()}` });
     } finally {
       setIsAuthenticating(false);
     }
@@ -157,7 +157,8 @@ export const Login = ({ onLogin }) => {
                   className="auth-input"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="e.g. thorne@h2shield.facility"
+                  autoComplete="username"
+                  aria-label="Facility Operator ID or Email"
                 />
               </div>
             </div>
@@ -167,7 +168,7 @@ export const Login = ({ onLogin }) => {
               <div className="auth-form-label">
                 <label htmlFor="input-pin">Security PIN</label>
                 <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                  Default: <strong style={{ color: 'var(--color-primary)' }}>{selectedUser.pin}</strong>
+                  Station Access Key
                 </span>
               </div>
 
@@ -180,7 +181,8 @@ export const Login = ({ onLogin }) => {
                   value={enteredPin}
                   onChange={(e) => setEnteredPin(e.target.value)}
                   maxLength={12}
-                  placeholder="Enter security PIN"
+                  autoComplete="current-password"
+                  aria-label="Security Access PIN"
                 />
                 <button
                   type="button"

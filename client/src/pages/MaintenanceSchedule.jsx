@@ -184,7 +184,6 @@ export const MaintenanceSchedule = ({ tasks, onUpdateTask, onCreateTask, vessels
                   <input 
                     type="text"
                     className="form-input"
-                    placeholder="e.g. Ultrasonic Wall Thickness Testing"
                     value={newTask.title}
                     onChange={e => setNewTask({ ...newTask, title: e.target.value })}
                     required
@@ -223,7 +222,6 @@ export const MaintenanceSchedule = ({ tasks, onUpdateTask, onCreateTask, vessels
                   <input 
                     type="text"
                     className="form-input"
-                    placeholder="e.g. M. Chen (ASNT Level II)"
                     value={newTask.technician}
                     onChange={e => setNewTask({ ...newTask, technician: e.target.value })}
                     required
@@ -235,7 +233,6 @@ export const MaintenanceSchedule = ({ tasks, onUpdateTask, onCreateTask, vessels
                   <textarea 
                     className="form-input"
                     rows="2"
-                    placeholder="Scope, safety clearances, and torque specs..."
                     value={newTask.notes}
                     onChange={e => setNewTask({ ...newTask, notes: e.target.value })}
                   />

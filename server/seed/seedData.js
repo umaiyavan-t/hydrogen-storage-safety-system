@@ -5,15 +5,27 @@ const Alert = require('../models/Alert');
 const MaintenanceTask = require('../models/MaintenanceTask');
 const ComplianceAudit = require('../models/ComplianceAudit');
 
-const seedDatabase = async () => {
+const seedDatabase = async (force = false) => {
   try {
     const vesselCount = await Vessel.countDocuments();
-    if (vesselCount > 0) {
-      console.log('Database already has data. Skipping automatic seed.');
+    if (vesselCount > 0 && !force) {
+      console.log('Database already has data. Skipping automatic seed. (Use --force to reseed)');
       return;
     }
 
-    console.log('Seeding initial industrial hydrogen storage data...');
+    if (force) {
+      console.log('Force reseed requested: purging existing records...');
+      await Promise.all([
+        Vessel.deleteMany({}),
+        Telemetry.deleteMany({}),
+        Alert.deleteMany({}),
+        MaintenanceTask.deleteMany({}),
+        ComplianceAudit.deleteMany({})
+      ]);
+      console.log('Purge completed. Seeding fresh industrial hydrogen storage dataset...');
+    } else {
+      console.log('Seeding initial industrial hydrogen storage data...');
+    }
 
     // 1. Vessels
     const vessels = [
@@ -140,11 +152,11 @@ const seedDatabase = async () => {
     ];
     await Vessel.insertMany(vessels);
 
-    // 2. Telemetry History (generate 20 history points for each vessel)
+    // 2. Telemetry History (generate 30 history points for each vessel)
     const now = Date.now();
     const telemetryEntries = [];
     vessels.forEach(v => {
-      for (let i = 20; i >= 0; i--) {
+      for (let i = 30; i >= 0; i--) {
         const timeOffset = i * 60 * 1000;
         const jitter = (Math.random() - 0.5) * 4;
         telemetryEntries.push({
@@ -189,6 +201,22 @@ const seedDatabase = async () => {
         acknowledged: true,
         acknowledgedBy: 'J. Reynolds (Safety Tech #41)',
         acknowledgedAt: new Date(now - 45 * 60 * 1000)
+      },
+      {
+        alertId: 'ALT-10815',
+        vesselId: 'H2-TNK-04',
+        vesselName: 'Dispenser Loop Header 350',
+        zone: 'Zone Gamma - Dispenser Manifold',
+        severity: 'ADVISORY',
+        metric: 'Dispenser Line Delta P',
+        triggerValue: '342.0 bar',
+        thresholdValue: '340.0 bar advisory limit',
+        message: 'Transient pressure surge stabilized via secondary bypass modulation.',
+        acknowledged: true,
+        acknowledgedBy: 'M. Vance (Operator #4202)',
+        acknowledgedAt: new Date(now - 3 * 60 * 60 * 1000),
+        resolved: true,
+        resolvedAt: new Date(now - 2 * 60 * 60 * 1000)
       }
     ];
     await Alert.insertMany(alerts);
@@ -228,6 +256,23 @@ const seedDatabase = async () => {
           { title: 'Purge line nitrogen flush', completed: false }
         ],
         notes: 'Investigating advisory sniff reading.'
+      },
+      {
+        taskId: 'MNT-4031',
+        vesselId: 'H2-TNK-05',
+        vesselName: 'Underground Cavern Buffer C-1',
+        title: 'NFPA 2 Cavern Wellhead ESD & Emergency Isolation Proof Test',
+        category: 'NFPA_SHUTDOWN_TEST',
+        priority: 'MEDIUM',
+        status: 'SCHEDULED',
+        technician: 'Dr. M. Chen (ASNT Level III)',
+        scheduledDate: new Date(now + 48 * 60 * 60 * 1000),
+        checklist: [
+          { title: 'Emergency shutdown (ESD) dual solenoid trip circuit', completed: false },
+          { title: 'Wellhead casing annular pressure verification', completed: false },
+          { title: 'Downhole safety valve (DHSV) pneumatic closure timing test', completed: false }
+        ],
+        notes: 'Statutory bi-annual cavern wellhead emergency isolation proof test.'
       },
       {
         taskId: 'MNT-3990',
@@ -315,11 +360,12 @@ module.exports = seedDatabase;
 if (require.main === module) {
   require('dotenv').config();
   const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/hydrogen_safety';
+  const force = process.argv.includes('--force') || process.argv.includes('-f');
   console.log(`Connecting to MongoDB Atlas at: ${uri.replace(/:([^@]+)@/, ':****@')}`);
   mongoose.connect(uri)
     .then(async () => {
       console.log('Successfully connected to MongoDB Atlas!');
-      await seedDatabase();
+      await seedDatabase(force);
       await mongoose.disconnect();
       console.log('Seed completed and disconnected cleanly.');
       process.exit(0);

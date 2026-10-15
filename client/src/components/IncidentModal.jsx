@@ -172,7 +172,7 @@ export const IncidentModal = ({ vessels, onClose, onSubmit }) => {
                 rows="3"
                 value={message}
                 onChange={e => setMessage(e.target.value)}
-                placeholder="Describe what you observed..."
+                aria-label="Issue description"
                 required
                 style={{ fontSize: '0.85rem' }}
               />
