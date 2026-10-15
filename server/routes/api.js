@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const Vessel = require('../models/Vessel');
 const Telemetry = require('../models/Telemetry');
 const Alert = require('../models/Alert');
 const MaintenanceTask = require('../models/MaintenanceTask');
 const ComplianceAudit = require('../models/ComplianceAudit');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'h2-super-secret-plant-key-2026';
 
 // RVAC: Industrial Hydrogen Storage Facility Personnel
 const FACILITY_USERS = [
@@ -12,6 +15,7 @@ const FACILITY_USERS = [
     userId: 'usr-thorne',
     badge: 'SE-7001',
     name: 'Dr. Aris Thorne',
+    email: 'thorne@h2shield.facility',
     role: 'SAFETY_ENGINEER',
     roleTitle: 'Plant Safety Engineer',
     zone: 'All High-Pressure Buffers & Cryo Enclosures',
@@ -30,6 +34,7 @@ const FACILITY_USERS = [
     userId: 'usr-vance',
     badge: 'OP-4202',
     name: 'Marcus Vance',
+    email: 'vance@h2shield.facility',
     role: 'OPERATOR',
     roleTitle: 'Control Room Operator',
     zone: 'Zone Alpha & Beta Monitoring',
@@ -44,6 +49,7 @@ const FACILITY_USERS = [
     userId: 'usr-rostova',
     badge: 'AUD-9103',
     name: 'Elena Rostova',
+    email: 'rostova@h2shield.facility',
     role: 'COMPLIANCE_AUDITOR',
     roleTitle: 'Lead Compliance Auditor',
     zone: 'Regulatory, NFPA 2 & ISO 19880-1 Division',
@@ -64,16 +70,61 @@ router.get('/auth/roles', (req, res) => {
 });
 
 router.post('/auth/login', (req, res) => {
-  const { userId, role, pin } = req.body;
-  const user = FACILITY_USERS.find(u => (userId && u.userId === userId) || (role && u.role === role));
+  const { userId, role, pin, email, password } = req.body;
+  const attemptedPin = pin || password;
+  const user = FACILITY_USERS.find(u => 
+    (email && u.email.toLowerCase() === email.toLowerCase()) ||
+    (userId && u.userId === userId) || 
+    (role && u.role === role)
+  );
+
   if (!user) {
-    return res.status(401).json({ success: false, message: 'Invalid facility personnel credentials.' });
+    return res.status(401).json({ success: false, message: 'Invalid facility personnel identity or email.' });
   }
-  if (pin && user.pin !== pin) {
-    return res.status(401).json({ success: false, message: 'Invalid security access PIN.' });
+  if (attemptedPin && user.pin !== attemptedPin) {
+    return res.status(401).json({ success: false, message: 'Invalid security access PIN / password.' });
   }
+
   const { pin: _p, ...safeUser } = user;
-  res.json({ success: true, data: safeUser });
+  const token = jwt.sign(
+    {
+      userId: safeUser.userId,
+      badge: safeUser.badge,
+      name: safeUser.name,
+      role: safeUser.role,
+      roleTitle: safeUser.roleTitle,
+      email: safeUser.email,
+      permissions: safeUser.permissions
+    },
+    JWT_SECRET,
+    { expiresIn: '12h' }
+  );
+
+  res.json({ success: true, token, data: safeUser });
+});
+
+// Middleware: extract JWT claims and populate req.user
+router.use((req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = decoded;
+      req.headers['x-operator-role'] = decoded.role;
+      req.headers['x-operator-id'] = `${decoded.name} (${decoded.badge})`;
+    } catch {
+      return res.status(401).json({ success: false, message: 'Session expired or invalid JWT token. Please re-authenticate.' });
+    }
+  }
+  next();
+});
+
+router.get('/auth/me', (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Unauthenticated session.' });
+  }
+  res.json({ success: true, data: req.user });
 });
 
 // 1. Overview KPIs

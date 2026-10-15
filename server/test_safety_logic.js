@@ -80,3 +80,26 @@ test('RVAC: Role clearances correctly enforce industrial safety boundaries', () 
   assert.equal(checkVentPermission('OPERATOR'), true, 'Operator can actuate relief valves in an emergency');
   assert.equal(checkVentPermission('COMPLIANCE_AUDITOR'), false, 'Compliance Auditor is strictly restricted from actuation');
 });
+
+test('JWT Security: signs and verifies industrial session tokens with correct claims', () => {
+  const jwt = require('jsonwebtoken');
+  const secret = 'test-plant-key-2026';
+  const payload = {
+    userId: 'usr-thorne',
+    badge: 'SE-7001',
+    name: 'Dr. Aris Thorne',
+    role: 'SAFETY_ENGINEER'
+  };
+
+  const token = jwt.sign(payload, secret, { expiresIn: '12h' });
+  assert.ok(typeof token === 'string' && token.length > 20, 'JWT token must be a signed string');
+
+  const decoded = jwt.verify(token, secret);
+  assert.equal(decoded.badge, 'SE-7001');
+  assert.equal(decoded.role, 'SAFETY_ENGINEER');
+
+  // Verify rejection with invalid secret
+  assert.throws(() => {
+    jwt.verify(token, 'invalid-secret');
+  });
+});
