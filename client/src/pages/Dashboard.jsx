@@ -9,7 +9,6 @@ import {
   Sliders, 
   Flame, 
   Eye,
-  HelpCircle,
   Check
 } from 'lucide-react';
 import { MetricCard } from '../components/MetricCard';
@@ -274,24 +273,6 @@ export const Dashboard = ({
               );
             })}
           </div>
-        </div>
-      </div>
-
-      {/* Phase 2 Feature Scope Notice */}
-      <div style={{ 
-        background: '#f8fafc', 
-        border: '1px dashed #cbd5e1', 
-        borderRadius: 'var(--radius-md)', 
-        padding: 12,
-        fontSize: '0.78rem',
-        color: 'var(--text-muted)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10
-      }}>
-        <HelpCircle size={16} color="var(--color-primary)" />
-        <div>
-          <strong>Phase 2 Feature Boundary (Scope 70% Hold):</strong> Automated GIS drone perimeter thermal inspection feeds and SCADA OPC-UA hardware bridge are scheduled for Phase 2 review.
         </div>
       </div>
     </div>

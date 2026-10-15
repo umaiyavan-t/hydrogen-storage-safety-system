@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Gauge, TrendingUp, History, RefreshCw, Download, HelpCircle } from 'lucide-react';
+import { Activity, Gauge, TrendingUp, History, RefreshCw, Download } from 'lucide-react';
 import { api } from '../services/api';
 
 export const TelemetryAnalytics = ({ vessels }) => {
@@ -252,24 +252,6 @@ export const TelemetryAnalytics = ({ vessels }) => {
               ))}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* Phase 2 Feature Scope Notice */}
-      <div style={{ 
-        background: '#f8fafc', 
-        border: '1px dashed #cbd5e1', 
-        borderRadius: 'var(--radius-md)', 
-        padding: 12,
-        fontSize: '0.78rem',
-        color: 'var(--text-muted)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10
-      }}>
-        <HelpCircle size={16} color="var(--color-primary)" />
-        <div>
-          <strong>Phase 2 Feature Boundary (Scope 70% Hold):</strong> High-frequency 10kHz acoustic ultrasonic frequency spectrum analysis and Fourier Transform (FFT) vibration plots are held for Phase 2 review.
         </div>
       </div>
     </div>

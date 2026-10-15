@@ -9,7 +9,6 @@ import {
   CheckCircle, 
   Clock, 
   AlertCircle,
-  HelpCircle,
   ArrowRight
 } from 'lucide-react';
 import { StatusBadge } from './StatusBadge';
@@ -181,24 +180,6 @@ export const VesselDetailModal = ({
               <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
                 Signal-to-noise ratio: Nominal 4-20mA loop
               </div>
-            </div>
-          </div>
-
-          {/* Phase 2 Feature Roadmap Callout (Honoring 70% Scope Boundary) */}
-          <div style={{ 
-            background: '#f8fafc', 
-            border: '1px dashed #cbd5e1', 
-            borderRadius: 'var(--radius-md)', 
-            padding: 12,
-            fontSize: '0.78rem',
-            color: 'var(--text-muted)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10
-          }}>
-            <HelpCircle size={16} color="var(--color-primary)" />
-            <div>
-              <strong>Phase 2 Feature Boundary (Scope 70% Hold):</strong> Ultrasonic acoustic wave micro-crack emission frequency telemetry and cloud enterprise insurance sync will be connected in Phase 2 review.
             </div>
           </div>
         </div>

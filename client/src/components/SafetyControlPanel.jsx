@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldAlert, Wind, Droplets, Flame, HelpCircle, FlaskConical, RotateCcw } from 'lucide-react';
+import { ShieldAlert, Wind, Droplets, Flame, FlaskConical, RotateCcw } from 'lucide-react';
 
 export const SafetyControlPanel = ({ 
   vessels, 
@@ -143,25 +143,6 @@ export const SafetyControlPanel = ({
               <span>Reset Facility</span>
             </button>
           </div>
-        </div>
-
-        {/* Phase 2 Scope Hold Notice */}
-        <div style={{ 
-          marginTop: 'auto',
-          background: '#f8fafc', 
-          border: '1px dashed #cbd5e1', 
-          borderRadius: 'var(--radius-md)', 
-          padding: 8,
-          fontSize: '0.72rem',
-          color: 'var(--text-muted)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6
-        }}>
-          <HelpCircle size={13} color="var(--color-primary)" />
-          <span>
-            <strong>Phase 2 Scope Hold:</strong> Automated AI-driven acoustic attenuation dampers & pneumatic feedback loop scheduled for Phase 2.
-          </span>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sliders, Wind, Eye, HelpCircle } from 'lucide-react';
+import { Sliders, Wind, Eye } from 'lucide-react';
 import { StatusBadge } from '../components/StatusBadge';
 
 export const VesselsView = ({ 
@@ -114,24 +114,6 @@ export const VesselsView = ({
               ))}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      {/* Phase 2 Feature Scope Notice */}
-      <div style={{ 
-        background: '#f8fafc', 
-        border: '1px dashed #cbd5e1', 
-        borderRadius: 'var(--radius-md)', 
-        padding: 12,
-        fontSize: '0.78rem',
-        color: 'var(--text-muted)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10
-      }}>
-        <HelpCircle size={16} color="var(--color-primary)" />
-        <div>
-          <strong>Phase 2 Feature Boundary (Scope 70% Hold):</strong> Ultrasonic thickness testing (UTT) structural wall degradation rate tracking is planned for Phase 2 implementation.
         </div>
       </div>
     </div>
