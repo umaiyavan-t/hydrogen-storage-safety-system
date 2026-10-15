@@ -128,221 +128,103 @@ export const Login = ({ onLogin }) => {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#f8fafc',
-      color: '#0f172a',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: '40px 20px',
-      fontFamily: 'Inter, system-ui, sans-serif'
-    }}>
+    <div className="auth-page">
       {/* Top Industrial Header & Brand */}
-      <div style={{ textAlign: 'center', maxWidth: 840, marginBottom: 36 }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          backgroundColor: '#ffffff',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-          borderRadius: 999,
-          padding: '6px 18px',
-          fontSize: '0.82rem',
-          fontWeight: 600,
-          color: '#475569',
-          marginBottom: 16
-        }}>
-          <div style={{
-            width: 20,
-            height: 20,
-            borderRadius: '50%',
-            backgroundColor: '#0284c7',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
+      <div className="auth-header-container">
+        <div className="auth-standard-pill">
+          <div className="auth-standard-icon">
             <Flame size={12} color="#ffffff" />
           </div>
           <span>NFPA 2 & ISO 19880-1 INDUSTRIAL SCADA ACCESS GATEWAY</span>
         </div>
 
-        <h1 style={{
-          fontSize: '2.1rem',
-          fontWeight: 800,
-          letterSpacing: '-0.03em',
-          color: '#0f172a',
-          margin: '0 0 10px 0',
-          lineHeight: 1.2
-        }}>
+        <h1 className="auth-title">
           Hydrogen Storage Facility Safety System
         </h1>
-        <p style={{
-          margin: 0,
-          color: '#64748b',
-          fontSize: '1rem',
-          fontWeight: 400
-        }}>
+        <p className="auth-subtitle">
           Role-Based Access Control (RVAC) Security Verification with HMAC-SHA256 JWT Authentication.
         </p>
       </div>
 
       {/* Main Container Card: Form + Station Selector */}
-      <div style={{
-        maxWidth: 1080,
-        width: '100%',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: 28,
-        alignItems: 'start'
-      }}>
+      <div className="auth-layout-grid">
         {/* Left Side: Formal JWT Credentials Sign-in */}
-        <div style={{
-          backgroundColor: '#ffffff',
-          borderRadius: 16,
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03)',
-          padding: 32
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div className="auth-card">
+          <div className="auth-card-header">
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 4px 0', color: '#0f172a' }}>
+              <h2 className="auth-card-title">
                 Console Personnel Login
               </h2>
-              <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+              <div className="auth-card-desc">
                 Authenticate with authorized facility credentials
               </div>
             </div>
-            <div style={{
-              background: '#f1f5f9',
-              padding: '6px 10px',
-              borderRadius: 8,
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              color: '#0284c7',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5
-            }}>
+            <div className="auth-session-chip">
               <Cpu size={13} />
               <span>JWT 12H Session</span>
             </div>
           </div>
 
           {errorMsg && (
-            <div style={{
-              background: '#fef2f2',
-              border: '1px solid #fecaca',
-              color: '#b91c1c',
-              padding: '10px 14px',
-              borderRadius: 8,
-              fontSize: '0.85rem',
-              marginBottom: 18,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}>
-              <AlertCircle size={16} color="#dc2626" />
+            <div className="auth-alert-box auth-alert-error">
+              <AlertCircle size={16} />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {authSuccess && (
-            <div style={{
-              background: '#ecfdf5',
-              border: '1px solid #a7f3d0',
-              color: '#047857',
-              padding: '10px 14px',
-              borderRadius: 8,
-              fontSize: '0.85rem',
-              marginBottom: 18,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}>
-              <CheckCircle2 size={16} color="#059669" />
+            <div className="auth-alert-box auth-alert-success">
+              <CheckCircle2 size={16} />
               <span>Clearance authorized. Initializing supervisory dashboard...</span>
             </div>
           )}
 
           <form onSubmit={(e) => { e.preventDefault(); handleAuthenticate(selectedUser, enteredPin, emailInput); }}>
             {/* Operator Identifier Input */}
-            <div style={{ marginBottom: 18 }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: 6 }}>
-                Facility Operator ID / Email
+            <div className="auth-form-group">
+              <label className="auth-form-label" htmlFor="input-operator-id">
+                <span>Facility Operator ID / Email</span>
               </label>
-              <div style={{ position: 'relative' }}>
+              <div className="auth-input-container">
+                <UserCheck size={16} className="auth-input-icon" />
                 <input
                   id="input-operator-id"
                   type="text"
+                  className="auth-input"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   placeholder="e.g. thorne@h2shield.facility"
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    height: 48,
-                    borderRadius: 8,
-                    border: '1.5px solid #cbd5e1',
-                    padding: '0 14px 0 38px',
-                    fontSize: '0.92rem',
-                    color: '#0f172a',
-                    outline: 'none',
-                    backgroundColor: '#ffffff'
-                  }}
                 />
-                <UserCheck size={16} color="#64748b" style={{ position: 'absolute', left: 12, top: 16 }} />
               </div>
             </div>
 
             {/* PIN / Password Input */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>
+            <div className="auth-form-group">
+              <div className="auth-form-label">
+                <label htmlFor="input-pin">
                   Security Access PIN / Password
                 </label>
-                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                  Default: <strong style={{ color: '#0284c7' }}>{selectedUser.pin}</strong>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  Default: <strong style={{ color: 'var(--color-primary)' }}>{selectedUser.pin}</strong>
                 </span>
               </div>
 
-              <div style={{ position: 'relative' }}>
+              <div className="auth-input-container">
+                <KeyRound size={16} className="auth-input-icon" />
                 <input
                   id="input-pin"
                   type={showPin ? 'text' : 'password'}
+                  className="auth-input auth-input-mono"
                   value={enteredPin}
                   onChange={(e) => setEnteredPin(e.target.value)}
                   maxLength={12}
                   placeholder="Enter 4-digit security PIN"
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    height: 48,
-                    borderRadius: 8,
-                    border: '1.5px solid #cbd5e1',
-                    padding: '0 40px 0 38px',
-                    fontSize: '0.95rem',
-                    fontFamily: 'monospace',
-                    color: '#0f172a',
-                    outline: 'none',
-                    backgroundColor: '#ffffff'
-                  }}
                 />
-                <KeyRound size={16} color="#64748b" style={{ position: 'absolute', left: 12, top: 16 }} />
                 <button
                   type="button"
+                  className="auth-toggle-visibility"
                   onClick={() => setShowPin(!showPin)}
-                  style={{
-                    position: 'absolute',
-                    right: 12,
-                    top: 14,
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: '#94a3b8'
-                  }}
+                  aria-label={showPin ? "Hide PIN" : "Show PIN"}
                 >
                   {showPin ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -350,22 +232,19 @@ export const Login = ({ onLogin }) => {
             </div>
 
             {/* Active Role Preview Chip */}
-            <div style={{
-              background: selectedUser.bgColor,
-              border: `1px solid ${selectedUser.borderColor}`,
-              borderRadius: 8,
-              padding: '10px 14px',
-              marginBottom: 22,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}>
+            <div 
+              className="auth-role-summary-banner"
+              style={{
+                backgroundColor: selectedUser.bgColor,
+                borderColor: selectedUser.borderColor
+              }}
+            >
               <div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: selectedUser.accentColor, textTransform: 'uppercase' }}>
+                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: selectedUser.accentColor, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   Target Role Clearance
                 </div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>
-                  {selectedUser.name} ({selectedUser.badge})
+                <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                  {selectedUser.name} <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>({selectedUser.badge})</span>
                 </div>
               </div>
               <span style={{
@@ -374,7 +253,7 @@ export const Login = ({ onLogin }) => {
                 fontSize: '0.72rem',
                 fontWeight: 700,
                 padding: '3px 8px',
-                borderRadius: 4
+                borderRadius: 'var(--radius-sm)'
               }}>
                 {selectedUser.role}
               </span>
@@ -384,24 +263,8 @@ export const Login = ({ onLogin }) => {
             <button
               id="btn-submit-auth"
               type="submit"
+              className="auth-submit-btn"
               disabled={isAuthenticating}
-              style={{
-                width: '100%',
-                height: 48,
-                backgroundColor: '#0284c7',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: 8,
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                cursor: isAuthenticating ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
-                transition: 'background-color 0.15s ease'
-              }}
             >
               <Lock size={16} />
               <span>{isAuthenticating ? 'Verifying Token...' : 'Authenticate & Enter Safety Console'}</span>
@@ -409,29 +272,19 @@ export const Login = ({ onLogin }) => {
           </form>
 
           {/* Security Assurance Badge */}
-          <div style={{
-            marginTop: 20,
-            paddingTop: 16,
-            borderTop: '1px solid #f1f5f9',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            fontSize: '0.78rem',
-            color: '#94a3b8'
-          }}>
-            <ShieldCheck size={14} color="#059669" />
+          <div className="auth-guarantee-note">
+            <ShieldCheck size={14} color="var(--color-success)" />
             <span>Encrypted with HMAC-SHA256 Signed JSON Web Tokens</span>
           </div>
         </div>
 
         {/* Right Side: Quick Personnel Station Badges */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="auth-personnel-column">
           <div style={{ marginBottom: 4 }}>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 700, margin: '0 0 4px 0', color: '#0f172a' }}>
+            <h2 style={{ fontSize: '1.18rem', fontWeight: 700, margin: '0 0 4px 0', color: 'var(--text-main)' }}>
               Facility Authorized Personnel
             </h2>
-            <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+            <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
               Select a certified role card for instantaneous clearance
             </div>
           </div>
@@ -442,33 +295,27 @@ export const Login = ({ onLogin }) => {
               <div
                 key={person.userId}
                 id={`role-card-${person.role.toLowerCase()}`}
+                className={`auth-station-card ${isSelected ? 'active' : ''}`}
                 onClick={() => handleSelectPersonnel(person)}
                 style={{
-                  backgroundColor: '#ffffff',
-                  border: `2px solid ${isSelected ? person.accentColor : '#e2e8f0'}`,
-                  borderRadius: 14,
-                  padding: '16px 20px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  boxShadow: isSelected 
-                    ? `0 10px 20px -5px ${person.accentColor}25` 
-                    : '0 2px 4px rgba(0, 0, 0, 0.02)'
+                  borderColor: isSelected ? person.accentColor : 'var(--border-color)',
+                  boxShadow: isSelected ? `0 8px 20px -4px ${person.accentColor}30` : undefined
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{
-                      fontFamily: 'monospace',
+                    <span className="mono" style={{
                       fontWeight: 700,
-                      fontSize: '0.78rem',
-                      background: '#f1f5f9',
-                      color: '#334155',
+                      fontSize: '0.75rem',
+                      background: 'var(--bg-card-subtle)',
+                      color: 'var(--text-muted)',
                       padding: '2px 7px',
-                      borderRadius: 4
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-color)'
                     }}>
                       {person.badge}
                     </span>
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#0f172a' }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
                       {person.name}
                     </h3>
                   </div>
@@ -479,24 +326,24 @@ export const Login = ({ onLogin }) => {
                     color: person.accentColor,
                     background: person.bgColor,
                     padding: '2px 8px',
-                    borderRadius: 999
+                    borderRadius: 9999
                   }}>
                     {person.role}
                   </span>
                 </div>
 
-                <div style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: 10 }}>
-                  {person.roleTitle} &bull; <span style={{ color: '#0284c7' }}>{person.email}</span>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10 }}>
+                  {person.roleTitle} &bull; <span style={{ color: 'var(--color-primary)' }}>{person.email}</span>
                 </div>
 
                 {/* Clearance tag */}
                 <div style={{
-                  fontSize: '0.78rem',
+                  fontSize: '0.76rem',
                   fontWeight: 600,
                   color: person.accentColor,
                   background: person.bgColor,
-                  padding: '4px 8px',
-                  borderRadius: 6,
+                  padding: '4px 10px',
+                  borderRadius: 'var(--radius-sm)',
                   marginBottom: 12,
                   display: 'inline-block'
                 }}>
@@ -507,26 +354,16 @@ export const Login = ({ onLogin }) => {
                 <button
                   id={`login-btn-${person.userId.replace('usr-', '')}`}
                   type="button"
+                  className="auth-station-quick-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleSelectPersonnel(person);
                     handleAuthenticate(person, person.pin, person.email);
                   }}
                   style={{
-                    width: '100%',
-                    height: 38,
-                    background: isSelected ? person.accentColor : '#f8fafc',
-                    color: isSelected ? '#ffffff' : '#334155',
-                    border: isSelected ? 'none' : '1px solid #cbd5e1',
-                    borderRadius: 6,
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    transition: 'all 0.15s ease'
+                    background: isSelected ? person.accentColor : undefined,
+                    color: isSelected ? '#ffffff' : undefined,
+                    borderColor: isSelected ? person.accentColor : undefined
                   }}
                 >
                   <span>Authorize as {person.name.split(' ')[0]}</span>
