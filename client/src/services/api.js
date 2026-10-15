@@ -1,5 +1,17 @@
-const API_HOST = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
-const BASE_URL = API_HOST ? (API_HOST.endsWith('/api') ? API_HOST : `${API_HOST}/api`) : '/api';
+const getBaseUrl = () => {
+  const envUrl = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+  if (envUrl) {
+    return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+  }
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return `${window.location.protocol}//${window.location.hostname}:5000/api`;
+    }
+  }
+  return '/api';
+};
+
+const BASE_URL = getBaseUrl();
 
 const getAuthHeaders = () => {
   try {
@@ -10,120 +22,109 @@ const getAuthHeaders = () => {
   }
 };
 
+const fetchWithAuth = async (url, options = {}) => {
+  const headers = { ...options.headers };
+  const auth = getAuthHeaders();
+  if (auth.Authorization && !headers.Authorization) {
+    headers.Authorization = auth.Authorization;
+  }
+  try {
+    const res = await fetch(url, { ...options, headers });
+    const data = await res.json();
+    if (res.status === 401 || (data && data.success === false && data.message?.includes('token'))) {
+      try { localStorage.removeItem('h2_auth_token'); } catch {}
+    }
+    return data;
+  } catch (err) {
+    console.error(`Fetch error for ${url}:`, err);
+    return { success: false, message: err.message };
+  }
+};
+
 export const api = {
   getOverview: async () => {
-    const res = await fetch(`${BASE_URL}/overview`, {
-      headers: { ...getAuthHeaders() }
-    });
-    return res.json();
+    return fetchWithAuth(`${BASE_URL}/overview`);
   },
   triggerScenario: async (scenario) => {
-    const res = await fetch(`${BASE_URL}/simulator/scenario`, {
+    return fetchWithAuth(`${BASE_URL}/simulator/scenario`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ scenario })
     });
-    return res.json();
   },
   getVessels: async () => {
-    const res = await fetch(`${BASE_URL}/vessels`, {
-      headers: { ...getAuthHeaders() }
-    });
-    return res.json();
+    return fetchWithAuth(`${BASE_URL}/vessels`);
   },
   getVessel: async (id) => {
-    const res = await fetch(`${BASE_URL}/vessels/${id}`, {
-      headers: { ...getAuthHeaders() }
-    });
-    return res.json();
+    return fetchWithAuth(`${BASE_URL}/vessels/${id}`);
   },
   updateThresholds: async (id, thresholds) => {
-    const res = await fetch(`${BASE_URL}/vessels/${id}/thresholds`, {
+    return fetchWithAuth(`${BASE_URL}/vessels/${id}/thresholds`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(thresholds)
     });
-    return res.json();
   },
   toggleReliefValve: async (id, payload) => {
-    const res = await fetch(`${BASE_URL}/vessels/${id}/relief-valve`, {
+    return fetchWithAuth(`${BASE_URL}/vessels/${id}/relief-valve`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    return res.json();
   },
   getTelemetryHistory: async (vesselId) => {
-    const res = await fetch(`${BASE_URL}/telemetry/historical/${vesselId}`, {
-      headers: { ...getAuthHeaders() }
-    });
-    return res.json();
+    return fetchWithAuth(`${BASE_URL}/telemetry/historical/${vesselId}`);
   },
   getAlerts: async (params = {}) => {
     const query = new URLSearchParams(params).toString();
-    const res = await fetch(`${BASE_URL}/alerts${query ? '?' + query : ''}`, {
-      headers: { ...getAuthHeaders() }
-    });
-    return res.json();
+    return fetchWithAuth(`${BASE_URL}/alerts${query ? '?' + query : ''}`);
   },
   acknowledgeAlert: async (id, user) => {
-    const res = await fetch(`${BASE_URL}/alerts/${id}/acknowledge`, {
+    return fetchWithAuth(`${BASE_URL}/alerts/${id}/acknowledge`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user })
     });
-    return res.json();
   },
   resolveAlert: async (id) => {
-    const res = await fetch(`${BASE_URL}/alerts/${id}/resolve`, {
+    return fetchWithAuth(`${BASE_URL}/alerts/${id}/resolve`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() }
+      headers: { 'Content-Type': 'application/json' }
     });
-    return res.json();
   },
   createAlert: async (alertData) => {
-    const res = await fetch(`${BASE_URL}/alerts`, {
+    return fetchWithAuth(`${BASE_URL}/alerts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(alertData)
     });
-    return res.json();
   },
   getMaintenanceTasks: async () => {
-    const res = await fetch(`${BASE_URL}/maintenance`, {
-      headers: { ...getAuthHeaders() }
-    });
-    return res.json();
+    return fetchWithAuth(`${BASE_URL}/maintenance`);
   },
   createMaintenanceTask: async (task) => {
-    const res = await fetch(`${BASE_URL}/maintenance`, {
+    return fetchWithAuth(`${BASE_URL}/maintenance`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(task)
     });
-    return res.json();
   },
   updateMaintenanceTask: async (id, update) => {
-    const res = await fetch(`${BASE_URL}/maintenance/${id}`, {
+    return fetchWithAuth(`${BASE_URL}/maintenance/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(update)
     });
-    return res.json();
   },
   getComplianceAudits: async () => {
-    const res = await fetch(`${BASE_URL}/compliance`, {
-      headers: { ...getAuthHeaders() }
-    });
-    return res.json();
+    return fetchWithAuth(`${BASE_URL}/compliance`);
   },
   updateComplianceAudit: async (id, update) => {
-    const res = await fetch(`${BASE_URL}/compliance/${id}`, {
+    return fetchWithAuth(`${BASE_URL}/compliance/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(update)
     });
-    return res.json();
   },
   getRoles: async () => {
     const res = await fetch(`${BASE_URL}/auth/roles`);

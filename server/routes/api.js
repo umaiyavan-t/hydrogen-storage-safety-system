@@ -114,7 +114,7 @@ router.use((req, res, next) => {
       req.headers['x-operator-role'] = decoded.role;
       req.headers['x-operator-id'] = `${decoded.name} (${decoded.badge})`;
     } catch {
-      return res.status(401).json({ success: false, message: 'Session expired or invalid JWT token. Please re-authenticate.' });
+      req.user = null;
     }
   }
   next();
