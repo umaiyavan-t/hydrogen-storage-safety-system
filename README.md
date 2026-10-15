@@ -12,6 +12,18 @@ This repository implements an industrial Supervisory Control and Data Acquisitio
 
 ---
 
+## Reviewer Quick-Start & Operational Credentials
+
+The console implements strict Role-Based Access Control (RVAC). For academic project reviews, testing panels, and defense demonstrations, three certified personnel profiles are pre-configured:
+
+| Personnel Name | Badge ID | Clearance Role | Default PIN | Authorized Scope & Clearances |
+| :--- | :--- | :--- | :---: | :--- |
+| **Dr. Aris Thorne** | `SE-7001` | `SAFETY_ENGINEER` | `7001` | Full administrative actuation; MAWP threshold calibration; Emergency Shutdown (ESD) control; alert resolution. |
+| **Marcus Vance** | `OP-4202` | `OPERATOR` | `4202` | Real-time telemetry monitoring; audible/visual alarm acknowledgment; operator emergency relief valve actuation. |
+| **Elena Rostova** | `AUD-9103` | `COMPLIANCE_AUDITOR` | `9103` | Read-only inspection clearance; regulatory sign-off; historical sensor CSV export; statutory audit certification. |
+
+---
+
 ## System Architecture
 
 The software architecture operates across three distinct operational layers:

@@ -110,7 +110,7 @@ export const Login = ({ onLogin }) => {
           Hydrogen Storage Facility Safety System
         </h1>
         <p className="auth-subtitle">
-          NFPA 2 &amp; ISO 19880-1 SCADA Access Control &bull; HMAC-SHA256 JWT Authorization
+          Facility Safety Management System &bull; Authorized Personnel Access
         </p>
       </div>
 
@@ -125,7 +125,7 @@ export const Login = ({ onLogin }) => {
             </div>
             <div className="auth-session-chip">
               <Cpu size={12} />
-              <span>JWT 12H</span>
+              <span>Secure Session</span>
             </div>
           </div>
 
@@ -229,14 +229,14 @@ export const Login = ({ onLogin }) => {
               disabled={isAuthenticating}
             >
               <Lock size={15} />
-              <span>{isAuthenticating ? 'Verifying Token...' : 'Authenticate & Enter Safety Console'}</span>
+              <span>{isAuthenticating ? 'Authenticating...' : 'Sign In to Safety Console'}</span>
             </button>
           </form>
 
           {/* Security Assurance Badge */}
           <div className="auth-guarantee-note">
             <ShieldCheck size={13} color="var(--color-success)" />
-            <span>Encrypted with HMAC-SHA256 Signed JSON Web Tokens</span>
+            <span>Authorized Operations Console Access</span>
           </div>
         </div>
 
