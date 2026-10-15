@@ -112,7 +112,7 @@ test('SCADA Progressive Drill Engine: ramps over and slowly restores baseline', 
   assert.equal(drill.type, 'OVERPRESSURE');
   assert.equal(drill.phase, 'RAMPING_UP');
   assert.equal(drill.totalSteps, 5);
-  assert.equal(drill.targetPressure, 694.5);
+  assert.equal(drill.targetPressure, 696.5);
 
   // Trigger Safe Reset
   const resetDrill = await startTelemetrySimulator.triggerDrill('RESET');

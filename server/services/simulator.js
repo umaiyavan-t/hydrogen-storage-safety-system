@@ -22,7 +22,7 @@ const triggerDrill = async (scenario, io) => {
       phase: 'RAMPING_UP',
       step: 0,
       totalSteps: 5,
-      targetPressure: 694.5,
+      targetPressure: 696.5,
       warnAlertCreated: false,
       critAlertCreated: false,
       description: 'Progressive Overpressure Escalation Ramp (NFPA 2 §6.3)'
@@ -285,20 +285,32 @@ const startTelemetrySimulator = (io) => {
           }
         }
 
-        // ISA-18.2 Alarm Hysteresis / Deadband Check
+        // ISA-18.2 Alarm Hysteresis / Anti-Chatter Deadband Check
         const wasCrit = targetVessel.status === 'CRITICAL';
         const wasWarn = targetVessel.status === 'WARNING';
-        const pDeadband = targetVessel.maxPressureBar > 100 ? 5.0 : 0.5;
-        const lelDeadband = 0.5;
-        const tDeadband = 1.5;
 
-        const pressureCrit = wasCrit ? newPressure >= (targetVessel.maxPressureBar - pDeadband) : newPressure >= targetVessel.maxPressureBar;
-        const pressureWarn = wasWarn ? newPressure >= (targetVessel.warningPressureBar - pDeadband) : newPressure >= targetVessel.warningPressureBar;
-        const lelCrit = wasCrit ? newLel >= (targetVessel.maxLelPercentage - lelDeadband) : newLel >= targetVessel.maxLelPercentage;
-        const lelWarn = wasWarn ? newLel >= (5.0 - lelDeadband) : newLel >= 5.0;
-        const tempCrit = wasCrit ? newTemp >= (targetVessel.maxTempC - tDeadband) : newTemp >= targetVessel.maxTempC;
-        const tempWarn = wasWarn ? newTemp >= (targetVessel.warningTempC - tDeadband) : newTemp >= targetVessel.warningTempC;
-        const healthWarn = newHealth <= 70;
+        // Industrial anti-chatter deadbands: to clear an alarm, reading must fall safely below the setpoint
+        const isHighPressure = targetVessel.maxPressureBar > 100;
+        const pCritClear = isHighPressure ? (targetVessel.maxPressureBar - 15.0) : (targetVessel.maxPressureBar - 2.0);
+        const pCritSet = isHighPressure ? (targetVessel.maxPressureBar - 4.0) : targetVessel.maxPressureBar;
+        const pressureCrit = wasCrit ? newPressure >= pCritClear : newPressure >= pCritSet;
+
+        const pWarnClear = isHighPressure ? (targetVessel.warningPressureBar - 15.0) : (targetVessel.warningPressureBar - 2.0);
+        const pressureWarn = wasWarn ? newPressure >= pWarnClear : newPressure >= targetVessel.warningPressureBar;
+
+        const lelCritClear = targetVessel.maxLelPercentage - 2.0;
+        const lelCrit = wasCrit ? newLel >= lelCritClear : newLel >= targetVessel.maxLelPercentage;
+
+        const lelWarnClear = 3.5;
+        const lelWarn = wasWarn ? newLel >= lelWarnClear : newLel >= 5.0;
+
+        const tempCritClear = targetVessel.maxTempC - 3.0;
+        const tempCrit = wasCrit ? newTemp >= tempCritClear : newTemp >= targetVessel.maxTempC;
+
+        const tempWarnClear = targetVessel.warningTempC - 3.0;
+        const tempWarn = wasWarn ? newTemp >= tempWarnClear : newTemp >= targetVessel.warningTempC;
+
+        const healthWarn = wasWarn ? newHealth < 80 : newHealth <= 70;
 
         let status = 'NOMINAL';
         if (pressureCrit || lelCrit || tempCrit) {

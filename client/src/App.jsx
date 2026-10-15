@@ -71,13 +71,6 @@ export default function App() {
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
 
-    // Automatic re-hydration if initial load occurred before backend was listening
-    const pollInterval = setInterval(() => {
-      if (!overview || vessels.length === 0) {
-        refreshAllData();
-      }
-    }, 3000);
-
     socket.on('telemetry:stream', ({ vesselId, vessel }) => {
       setVessels(prev => prev.map(v => v.vesselId === vesselId ? { ...v, ...vessel } : v));
       // Also update currently inspected vessel if open
@@ -94,7 +87,7 @@ export default function App() {
     });
 
     socket.on('alert:new', (newAlert) => {
-      setAlerts(prev => [newAlert, ...prev]);
+      setAlerts(prev => [newAlert, ...prev.filter(a => a.alertId !== newAlert.alertId)]);
       api.getOverview().then(res => { if (res.success) setOverview(res.data); });
     });
 
@@ -103,21 +96,25 @@ export default function App() {
     });
 
     socket.on('alert:resolved', (resAlert) => {
-      setAlerts(prev => prev.map(a => a.alertId === resAlert.alertId ? resAlert : a));
+      if (resAlert.all) {
+        setAlerts(prev => prev.map(a => ({ ...a, resolved: true, resolvedAt: new Date().toISOString() })));
+      } else {
+        setAlerts(prev => prev.map(a => a.alertId === resAlert.alertId ? resAlert : a));
+      }
       api.getOverview().then(res => { if (res.success) setOverview(res.data); });
     });
 
     return () => {
-      clearInterval(pollInterval);
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
       socket.off('telemetry:stream');
+      socket.off('overview:update');
       socket.off('vessel:update');
       socket.off('alert:new');
       socket.off('alert:acknowledged');
       socket.off('alert:resolved');
     };
-  }, [overview, vessels.length]);
+  }, []);
 
   // Handlers
   const handleTriggerScenario = async (scenarioKey) => {
