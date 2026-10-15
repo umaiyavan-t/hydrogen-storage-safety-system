@@ -62,8 +62,21 @@ export default function App() {
     refreshAllData();
 
     // Socket.IO event listeners
-    socket.on('connect', () => setIsConnected(true));
-    socket.on('disconnect', () => setIsConnected(false));
+    const handleConnect = () => {
+      setIsConnected(true);
+      refreshAllData();
+    };
+    const handleDisconnect = () => setIsConnected(false);
+
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+
+    // Automatic re-hydration if initial load occurred before backend was listening
+    const pollInterval = setInterval(() => {
+      if (!overview || vessels.length === 0) {
+        refreshAllData();
+      }
+    }, 3000);
 
     socket.on('telemetry:stream', ({ vesselId, vessel }) => {
       setVessels(prev => prev.map(v => v.vesselId === vesselId ? { ...v, ...vessel } : v));
@@ -95,15 +108,16 @@ export default function App() {
     });
 
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
+      clearInterval(pollInterval);
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
       socket.off('telemetry:stream');
       socket.off('vessel:update');
       socket.off('alert:new');
       socket.off('alert:acknowledged');
       socket.off('alert:resolved');
     };
-  }, []);
+  }, [overview, vessels.length]);
 
   // Handlers
   const handleTriggerScenario = async (scenarioKey) => {
