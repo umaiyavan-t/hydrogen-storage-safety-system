@@ -1,0 +1,85 @@
+================================================================================
+HYDROGEN STORAGE FACILITY MONITORING & SAFETY MANAGEMENT SYSTEM
+PROJECT OVERVIEW, ARCHITECTURE & REVIEWER DEFENSE MANUAL
+================================================================================
+
+1. SYSTEM PURPOSE & PROBLEM CONTEXT
+--------------------------------------------------------------------------------
+Hydrogen is the cleanest industrial fuel but is notoriously volatile:
+- Extremely wide flammability range (4% to 75% in air).
+- Microscopic molecular size makes it prone to high-pressure embrittlement and leaks.
+- Uncontrolled pressure spikes or vessel seal degradation can cause catastrophic deflagration.
+
+This web application provides real-time condition monitoring, safety threshold 
+management, automatic emergency shutdown (ESD), and remote valve venting across 
+high-pressure buffer headers, cryogenic vessels, and composite tube trailers.
+
+Complies with industrial standards:
+- NFPA 2 (Hydrogen Technologies Code)
+- ISO 19880-1 (Gaseous Hydrogen Fueling Stations)
+- OSHA 1910.103 (Hydrogen Storage Regulations)
+
+
+2. ARCHITECTURE & REAL-TIME DATA FLOW
+--------------------------------------------------------------------------------
+[Sensors / Simulator (4s)] ---> [Node.js + Express Backend] ---> [MongoDB Engine]
+                                            |
+                                  (Socket.io WebSockets)
+                                            v
+                                 [React Single-Page App]
+                                  - Live Area Spline Chart
+                                  - Vessel Telemetry Grid
+                                  - Emergency Vent Controls
+                                  - 1-Click Alert Resolution
+
+Telemetry Monitored Every 4 Seconds:
+- Vessel Pressure (bar)
+- Storage Temperature (deg C)
+- Ambient Hydrogen Concentration (ppm)
+- Lower Explosive Limit (% LEL)
+
+
+3. KEY CAPABILITIES (70% MILESTONE REACHED)
+--------------------------------------------------------------------------------
+- SIMULATION COCKPIT: Floating dark minimal bar to trigger live scenarios:
+  * High Pressure Spike (420 bar)
+  * Cryogenic Thermal Runaway (+38 deg C)
+  * Micro-Leak (% LEL alert)
+  * Emergency Remote Venting
+  * Reset Baseline
+- SMOOTH TELEMETRY AREA CHART: Cubic Bezier spline with live pulsing beacon,
+  warning limit threshold lines, auto-zoom scaling, and tank dropdown switcher.
+- 1-CLICK ALERT HEALING: Resolving an incident automatically writes a safe 
+  baseline back to MongoDB and restores vessel health to nominal STABLE in real-time.
+- EMERGENCY REMOTE VENT: Actuates isolation relief valves directly from the console 
+  and logs an audit trail event.
+- PREVENTIVE MAINTENANCE & COMPLIANCE: Tracks safety inspection tasks and ISO audits.
+
+
+4. QUICK 2-MINUTE DEMO SCRIPT FOR REVIEWERS
+--------------------------------------------------------------------------------
+Step 1: Open http://localhost:3000.
+Step 2: Point to the Overview. Show 4 vessels operating nominally (Pressure < 350 bar, 0 ppm leak).
+Step 3: In the Simulation Cockpit, click "High Pressure Spike (420 bar)".
+Step 4: Show the immediate reaction:
+        - Pressure card turns red.
+        - High-Pressure Incident banner opens.
+        - Chart auto-switches to the spiking tank and breaches the red threshold line.
+Step 5: Click "Emergency Vent" or green "Resolve Alert". 
+        - Vessel vents pressure safely.
+        - Baseline heals back to nominal 280 bar / 98% health.
+        - Incident clears from the live banner.
+
+
+5. HOW TO RUN
+--------------------------------------------------------------------------------
+With Docker (Recommended):
+  docker compose up -d --build
+  Frontend: http://localhost:3000
+  Backend:  http://localhost:5000
+
+Without Docker:
+  cd server && npm install && npm start
+  cd client && npm install && npm run dev (http://localhost:5173)
+
+================================================================================

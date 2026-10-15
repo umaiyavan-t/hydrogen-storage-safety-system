@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Production build outputs
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Editor & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing & Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Python & Report generator artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+report-generator/test_*.docx
+report-generator/test_*.py

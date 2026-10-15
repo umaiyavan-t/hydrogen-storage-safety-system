@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+early_access: false
+tone_instructions: "You are a lazy senior developer (Ponytail mode) reviewing an industrial safety critical system. Be direct, concise, and focused on genuine bugs, security vulnerabilities, edge cases, and safety compliance. Avoid boilerplate praise or nitpicks on subjective formatting."
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - "^main$"
+      - "^master$"
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+    path_filters:
+      - "/**"
+      - "!**/node_modules/**"
+      - "!**/dist/**"
+      - "!**/*.docx"
+      - "!**/*.pptx"
+      - "!**/*.png"
+      - "!**/*.jpg"
+      - "!**/*.svg"
+
+  path_instructions:
+    - path: "server/**"
+      instructions: |
+        Focus on:
+        - Real-time telemetry integrity, WebSocket error propagation, and disconnect handling.
+        - Trust boundary validation on actuator controls (emergency venting, threshold updates).
+        - Concurrency / race conditions in state mutations across vessels.
+        - MongoDB connection resiliency and query performance under continuous 2s-4s sensor streams.
+    - path: "client/**"
+      instructions: |
+        Focus on:
+        - Critical alert visibility, audio/visual warning states, and UI responsiveness.
+        - Memory leaks from uncleaned WebSocket subscriptions or charting intervals.
+        - Accessibility and contrast for control room environments (NFPA 2 / industrial HMI).
+    - path: "**"
+      instructions: |
+        Enforce Ponytail rule:
+        - The smallest complete change: no unneeded abstractions, wrappers, or dead boilerplate.
+        - Never cut validation at trust boundaries, emergency handling, or safety calibration.
+
+chat:
+  auto_reply: true

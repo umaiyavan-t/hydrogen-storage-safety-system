@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://render.com/schema/render.yaml.json
+services:
+  # 1. Backend API & WebSocket Server
+  - type: web
+    name: hydrogen-safety-server
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+        # Note: Provide your free MongoDB Atlas M0 URI (e.g. mongodb+srv://<user>:<password>@cluster0.mongodb.net/hydrogen_safety)
+      - key: CLIENT_URL
+        sync: false
+        # Note: Set to your hydrogen-safety-client Render URL once created (or * for initial setup)
+      - key: ENABLE_SIMULATOR
+        value: "true"
+
+  # 2. Frontend React Client (Single Page Application)
+  - type: web
+    name: hydrogen-safety-client
+    runtime: static
+    plan: free
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: hydrogen-safety-server
+          property: host

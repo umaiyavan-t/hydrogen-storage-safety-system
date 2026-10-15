@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "page-design-guide-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "page-design-guide-mcp"
+      ]
+    }
+  }
+}
