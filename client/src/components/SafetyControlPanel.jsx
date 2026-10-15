@@ -1,13 +1,21 @@
-import React from 'react';
-import { ShieldAlert, Wind, Droplets, Flame, HelpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldAlert, Wind, Droplets, Flame, HelpCircle, FlaskConical, RotateCcw } from 'lucide-react';
 
 export const SafetyControlPanel = ({ 
   vessels, 
   onTriggerESD, 
   facilityStatus 
 }) => {
+  const [activeDrill, setActiveDrill] = useState(null);
   const ventingCount = vessels.filter(v => v.reliefValveOpen).length;
   const criticalCount = vessels.filter(v => v.status === 'CRITICAL').length;
+
+  const handleDrill = async (drillKey) => {
+    setActiveDrill(drillKey);
+    if (onTriggerESD) {
+      await onTriggerESD(drillKey);
+    }
+  };
 
   return (
     <div className="panel" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -45,7 +53,7 @@ export const SafetyControlPanel = ({
           <button 
             className="btn btn-sm btn-danger-solid"
             style={{ width: '100%', justifyContent: 'center', fontWeight: 700 }}
-            onClick={() => onTriggerESD && onTriggerESD('ESD_VENT')}
+            onClick={() => handleDrill('ESD_VENT')}
           >
             <Wind size={14} />
             <span>Open Emergency Vents (All Tanks)</span>
@@ -73,20 +81,84 @@ export const SafetyControlPanel = ({
           </div>
         </div>
 
+        {/* SCADA Safety Drill & Commissioning Scenarios */}
+        <div style={{
+          background: '#f8fafc',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
+          padding: 12
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <FlaskConical size={14} color="var(--color-primary)" />
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                SCADA Drill Scenarios
+              </span>
+            </div>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Plant Simulation Mode</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleDrill('OVERPRESSURE')}
+              title="Inject Overpressure Spike (695 bar)"
+              style={{ fontSize: '0.75rem', padding: '6px 8px', justifyContent: 'flex-start', gap: 6 }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#dc2626', display: 'inline-block' }} />
+              <span>Overpressure</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleDrill('LEAK')}
+              title="Simulate Flammable H2 Dispersion (18.5% LEL)"
+              style={{ fontSize: '0.75rem', padding: '6px 8px', justifyContent: 'flex-start', gap: 6 }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+              <span>Gas Dispersion</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleDrill('SENSOR_FAIL')}
+              title="Simulate Sensor Heartbeat Loss"
+              style={{ fontSize: '0.75rem', padding: '6px 8px', justifyContent: 'flex-start', gap: 6 }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#a855f7', display: 'inline-block' }} />
+              <span>Sensor Drop</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleDrill('RESET')}
+              title="Reset All Vessels & Alarms to Nominal Baseline"
+              style={{ fontSize: '0.75rem', padding: '6px 8px', justifyContent: 'flex-start', gap: 6 }}
+            >
+              <RotateCcw size={12} color="#059669" />
+              <span>Reset Facility</span>
+            </button>
+          </div>
+        </div>
+
         {/* Phase 2 Scope Hold Notice */}
         <div style={{ 
           marginTop: 'auto',
           background: '#f8fafc', 
           border: '1px dashed #cbd5e1', 
           borderRadius: 'var(--radius-md)', 
-          padding: 10,
-          fontSize: '0.74rem',
+          padding: 8,
+          fontSize: '0.72rem',
           color: 'var(--text-muted)',
           display: 'flex',
           alignItems: 'center',
-          gap: 8
+          gap: 6
         }}>
-          <HelpCircle size={14} color="var(--color-primary)" />
+          <HelpCircle size={13} color="var(--color-primary)" />
           <span>
             <strong>Phase 2 Scope Hold:</strong> Automated AI-driven acoustic attenuation dampers & pneumatic feedback loop scheduled for Phase 2.
           </span>

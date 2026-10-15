@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
-import { XboxDemoBar } from './components/XboxDemoBar';
 import { Dashboard } from './pages/Dashboard';
 import { VesselsView } from './pages/VesselsView';
 import { TelemetryAnalytics } from './pages/TelemetryAnalytics';
@@ -236,12 +235,6 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* Xbox-style Floating Draggable Crisis & Scenario Simulator Bar */}
-      <XboxDemoBar 
-        onTriggerScenario={handleTriggerScenario} 
-        isConnected={isConnected} 
-      />
-
       <Sidebar 
         currentTab={currentTab} 
         setCurrentTab={setCurrentTab} 
