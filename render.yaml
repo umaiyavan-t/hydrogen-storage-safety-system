@@ -36,7 +36,6 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: hydrogen-safety-server
-          property: host
+        value: https://hydrogen-safety-server.onrender.com/api
+      - key: VITE_SOCKET_URL
+        value: https://hydrogen-safety-server.onrender.com
