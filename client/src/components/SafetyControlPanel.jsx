@@ -48,14 +48,25 @@ export const SafetyControlPanel = ({
             </span>
           </div>
           
-          <button 
-            className="btn btn-sm btn-danger-solid"
-            style={{ width: '100%', justifyContent: 'center', fontWeight: 700 }}
-            onClick={() => handleDrill('ESD_VENT')}
-          >
-            <Wind size={14} />
-            <span>Open Emergency Vents (All Tanks)</span>
-          </button>
+          {ventingCount > 0 ? (
+            <button 
+              className="btn btn-sm btn-secondary"
+              style={{ width: '100%', justifyContent: 'center', fontWeight: 700, gap: 6 }}
+              onClick={() => handleDrill('CLOSE_VENTS')}
+            >
+              <ShieldAlert size={14} style={{ color: 'var(--color-primary)' }} />
+              <span>Seal All Emergency Vents (Close)</span>
+            </button>
+          ) : (
+            <button 
+              className="btn btn-sm btn-danger-solid"
+              style={{ width: '100%', justifyContent: 'center', fontWeight: 700, gap: 6 }}
+              onClick={() => handleDrill('ESD_VENT')}
+            >
+              <Wind size={14} />
+              <span>Open Emergency Vents (All Tanks)</span>
+            </button>
+          )}
         </div>
 
         {/* Safety System Grid Tiles */}

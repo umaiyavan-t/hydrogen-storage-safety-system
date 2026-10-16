@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Vessel = require('../models/Vessel');
 const Telemetry = require('../models/Telemetry');
 const Alert = require('../models/Alert');
@@ -66,6 +67,22 @@ const triggerDrill = async (scenario, io) => {
       alertCreated: false,
       description: 'Emergency Facility Depressurization to Flare Stack'
     };
+    if (mongoose.connection.readyState === 1) {
+      await Vessel.updateMany({ maxPressureBar: { $gt: 100 } }, { $set: { reliefValveOpen: true } });
+    }
+  } else if (scenario === 'CLOSE_VENTS') {
+    activeDrill = null;
+    if (mongoose.connection.readyState === 1) {
+      await Vessel.updateMany({}, { $set: { reliefValveOpen: false } });
+      if (io) {
+        const allVessels = await Vessel.find();
+        for (const v of allVessels) {
+          io.emit('vessel:update', v);
+        }
+        io.emit('simulator:drill_status', null);
+      }
+    }
+    return { type: 'CLOSE_VENTS', success: true };
   } else if (scenario === 'RESET') {
     activeDrill = {
       type: 'RESET',
@@ -74,6 +91,9 @@ const triggerDrill = async (scenario, io) => {
       totalSteps: 5,
       description: 'Controlled Plant Restoration: Smoothly Returning to Nominal Baseline'
     };
+    if (mongoose.connection.readyState === 1) {
+      await Vessel.updateMany({}, { $set: { reliefValveOpen: false } });
+    }
   }
 
   if (io && activeDrill) {
@@ -84,6 +104,10 @@ const triggerDrill = async (scenario, io) => {
 };
 
 const getActiveDrill = () => activeDrill;
+const clearDrill = () => {
+  activeDrill = null;
+  return null;
+};
 
 const startTelemetrySimulator = (io) => {
   console.log('Hydrogen Telemetry Simulator initiated (interval: 3s, dynamic MonotoneX ramp & safe restore active)');
@@ -99,6 +123,12 @@ const startTelemetrySimulator = (io) => {
       // Advance drill progress if active
       if (activeDrill) {
         if (activeDrill.phase === 'RAMPING_UP') {
+          activeDrill.step += 1;
+          if (activeDrill.step >= activeDrill.totalSteps) {
+            activeDrill.step = activeDrill.totalSteps;
+            activeDrill.phase = 'HOLDING';
+          }
+        } else if (activeDrill.phase === 'RAMPING_DOWN') {
           activeDrill.step += 1;
           if (activeDrill.step >= activeDrill.totalSteps) {
             activeDrill.step = activeDrill.totalSteps;
@@ -225,8 +255,9 @@ const startTelemetrySimulator = (io) => {
               await dispatchAlert(alert, io);
             }
           } else if (activeDrill.type === 'ESD_VENT' && targetVessel.maxPressureBar > 100) {
-            targetVessel.reliefValveOpen = true;
-            newPressure = Math.max(200, +(newPressure - 35 * progress).toFixed(1));
+            if (targetVessel.reliefValveOpen) {
+              newPressure = Math.max(200, +(newPressure - 35 * progress).toFixed(1));
+            }
             if (!activeDrill.alertCreated) {
               activeDrill.alertCreated = true;
               const alert = new Alert({
@@ -401,5 +432,6 @@ const startTelemetrySimulator = (io) => {
 
 startTelemetrySimulator.triggerDrill = triggerDrill;
 startTelemetrySimulator.getActiveDrill = getActiveDrill;
+startTelemetrySimulator.clearDrill = clearDrill;
 
 module.exports = startTelemetrySimulator;

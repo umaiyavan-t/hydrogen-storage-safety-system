@@ -296,6 +296,11 @@ router.post('/vessels/:id/relief-valve', async (req, res) => {
     if (!vessel) return res.status(404).json({ success: false, message: 'Vessel not found' });
 
     vessel.reliefValveOpen = Boolean(reliefValveOpen);
+    if (!reliefValveOpen) {
+      if (startTelemetrySimulator.getActiveDrill()?.type === 'ESD_VENT') {
+        startTelemetrySimulator.clearDrill();
+      }
+    }
     if (reliefValveOpen && vessel.currentPressureBar > 350) {
       vessel.currentPressureBar = Math.max(vessel.currentPressureBar - 40, 280);
     }
