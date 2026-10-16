@@ -1,17 +1,34 @@
-import React from 'react';
-import { ShieldAlert, Wind, Droplets, Flame } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldAlert, Wind, Droplets, Flame, FlaskConical, RotateCcw, ShieldCheck } from 'lucide-react';
 
 export const SafetyControlPanel = ({ 
   vessels, 
   onTriggerESD, 
   facilityStatus 
 }) => {
+  const [feedbackMsg, setFeedbackMsg] = useState(null);
+  const [loadingAction, setLoadingAction] = useState(null);
+
   const ventingCount = vessels.filter(v => v.reliefValveOpen).length;
   const criticalCount = vessels.filter(v => v.status === 'CRITICAL').length;
 
-  const handleDrill = async (drillKey) => {
-    if (onTriggerESD) {
-      await onTriggerESD(drillKey);
+  const handleDrill = async (drillKey, label) => {
+    try {
+      setLoadingAction(drillKey);
+      if (label) setFeedbackMsg(`Executing: ${label}...`);
+      if (onTriggerESD) {
+        const res = await onTriggerESD(drillKey);
+        if (res?.message) {
+          setFeedbackMsg(res.message);
+        } else if (label) {
+          setFeedbackMsg(`Applied: ${label}`);
+        }
+      }
+    } catch (err) {
+      setFeedbackMsg(`Error: ${err.message}`);
+    } finally {
+      setLoadingAction(null);
+      setTimeout(() => setFeedbackMsg(null), 4000);
     }
   };
 
@@ -52,16 +69,18 @@ export const SafetyControlPanel = ({
             <button 
               className="btn btn-sm btn-secondary"
               style={{ width: '100%', justifyContent: 'center', fontWeight: 700, gap: 6 }}
-              onClick={() => handleDrill('CLOSE_VENTS')}
+              onClick={() => handleDrill('CLOSE_VENTS', 'Seal All Vents')}
+              disabled={loadingAction !== null}
             >
-              <ShieldAlert size={14} style={{ color: 'var(--color-primary)' }} />
+              <ShieldCheck size={14} style={{ color: 'var(--color-primary)' }} />
               <span>Seal All Emergency Vents (Close)</span>
             </button>
           ) : (
             <button 
               className="btn btn-sm btn-danger-solid"
               style={{ width: '100%', justifyContent: 'center', fontWeight: 700, gap: 6 }}
-              onClick={() => handleDrill('ESD_VENT')}
+              onClick={() => handleDrill('ESD_VENT', 'Open All Vents')}
+              disabled={loadingAction !== null}
             >
               <Wind size={14} />
               <span>Open Emergency Vents (All Tanks)</span>
@@ -88,6 +107,113 @@ export const SafetyControlPanel = ({
             <div style={{ fontSize: '0.86rem', fontWeight: 800 }}>PILOT FLAME LIT</div>
             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }}>Safe hydrogen burning</div>
           </div>
+        </div>
+
+        {/* Integrated White-Theme Simulation Cockpit */}
+        <div style={{
+          background: '#f8fafc',
+          border: '1px solid var(--border-color)',
+          borderRadius: 'var(--radius-md)',
+          padding: 12,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <FlaskConical size={14} style={{ color: 'var(--color-primary)' }} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                Simulation Cockpit
+              </span>
+            </div>
+            <span className="badge badge-nominal" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+              SCADA ENGINE
+            </span>
+          </div>
+
+          {/* Drill Action Buttons Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleDrill('OVERPRESSURE', 'Overpressure Spike')}
+              disabled={loadingAction !== null}
+              title="Progressive Overpressure Spike (695 bar)"
+              style={{ fontSize: '0.74rem', padding: '6px 10px', justifyContent: 'flex-start', gap: 6 }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#dc2626', display: 'inline-block' }} />
+              <span>Overpressure</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleDrill('LEAK', 'Gas Leak')}
+              disabled={loadingAction !== null}
+              title="Flammable Gas Dispersion (18.5% LEL)"
+              style={{ fontSize: '0.74rem', padding: '6px 10px', justifyContent: 'flex-start', gap: 6 }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#f59e0b', display: 'inline-block' }} />
+              <span>Gas Dispersion</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleDrill('SENSOR_FAIL', 'Sensor Drop')}
+              disabled={loadingAction !== null}
+              title="Sensor Signal Degradation (34%)"
+              style={{ fontSize: '0.74rem', padding: '6px 10px', justifyContent: 'flex-start', gap: 6 }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#a855f7', display: 'inline-block' }} />
+              <span>Sensor Drop</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              onClick={() => handleDrill('CLOSE_VENTS', 'Seal All Vents')}
+              disabled={loadingAction !== null}
+              title="Immediately seal all 6 tank relief valves"
+              style={{ fontSize: '0.74rem', padding: '6px 10px', justifyContent: 'flex-start', gap: 6 }}
+            >
+              <ShieldCheck size={13} color="#0284c7" />
+              <span>Seal All Vents</span>
+            </button>
+          </div>
+
+          {/* 1-Click Reset Baseline */}
+          <button
+            type="button"
+            className="btn btn-sm btn-secondary"
+            onClick={() => handleDrill('RESET', 'Reset Baseline')}
+            disabled={loadingAction !== null}
+            title="Restore all 6 vessels to normal operating baseline"
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center', 
+              fontWeight: 700, 
+              fontSize: '0.75rem',
+              color: '#059669',
+              background: '#ecfdf5',
+              borderColor: '#a7f3d0',
+              gap: 6
+            }}
+          >
+            <RotateCcw size={12} color="#059669" />
+            <span>Reset Plant Baseline</span>
+          </button>
+
+          {feedbackMsg && (
+            <div style={{
+              fontSize: '0.7rem',
+              color: 'var(--text-muted)',
+              textAlign: 'center',
+              fontFamily: "'JetBrains Mono', monospace"
+            }}>
+              {feedbackMsg}
+            </div>
+          )}
         </div>
       </div>
     </div>
