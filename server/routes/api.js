@@ -328,6 +328,7 @@ router.post('/vessels/:id/relief-valve', async (req, res) => {
       req.app.get('io').emit('vessel:update', vessel);
       req.app.get('io').emit('alert:new', alert);
     }
+    sendTelegramAlert(alert);
 
     res.json({ success: true, data: { vessel, alert } });
   } catch (error) {

@@ -21,6 +21,10 @@ services:
         # Note: Set to your hydrogen-safety-client Render URL once created (or * for initial setup)
       - key: ENABLE_SIMULATOR
         value: "true"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
 
   # 2. Frontend React Client (Single Page Application)
   - type: web
