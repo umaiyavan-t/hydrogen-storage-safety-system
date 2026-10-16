@@ -121,3 +121,39 @@ test('SCADA Progressive Drill Engine: ramps over and slowly restores baseline', 
   assert.equal(resetDrill.totalSteps, 5);
   assert.equal(startTelemetrySimulator.getActiveDrill().phase, 'RESTORING');
 });
+
+test('Telegram Service: formats HTML alert notifications and enforces debounce cooldown', async () => {
+  const { formatAlertMessage, sendTelegramAlert, sendTelegramTest } = require('./services/telegramService');
+
+  const alert = {
+    alertId: 'ALT-999999',
+    vesselId: 'H2-TNK-TEST',
+    vesselName: 'Cryo Tank Test',
+    zone: 'Zone Gamma',
+    severity: 'CRITICAL',
+    metric: 'Cryo Leak Detection',
+    triggerValue: '12.5% LEL',
+    thresholdValue: 'Limit: 5% LEL',
+    message: 'Hydrogen gas leakage detected near cryogenic manifold.'
+  };
+
+  // Test 1: HTML Formatting contains required parameters
+  const msg = formatAlertMessage(alert);
+  assert.match(msg, /🚨 <b>HYDROGEN SAFETY ALERT: CRITICAL<\/b>/);
+  assert.match(msg, /<b>Asset:<\/b> Cryo Tank Test/);
+  assert.match(msg, /<b>Trigger:<\/b> <code>12\.5% LEL<\/code>/);
+
+  // Test 2: Unconfigured env vars fallback gracefully to mock mode
+  const res1 = await sendTelegramAlert(alert);
+  assert.equal(res1.success, true);
+  assert.equal(res1.mocked, true);
+
+  // Test 3: Rapid consecutive dispatch within cooldown window is debounced
+  const res2 = await sendTelegramAlert(alert);
+  assert.equal(res2.success, false);
+  assert.equal(res2.skipped, 'cooldown');
+
+  // Test 4: sendTelegramTest forces bypass of cooldown
+  const resTest = await sendTelegramTest({ vesselId: 'H2-TNK-TEST', metric: 'Cryo Leak Detection' });
+  assert.equal(resTest.success, true);
+});

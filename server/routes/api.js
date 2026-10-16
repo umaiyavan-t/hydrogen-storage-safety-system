@@ -7,6 +7,7 @@ const Alert = require('../models/Alert');
 const MaintenanceTask = require('../models/MaintenanceTask');
 const ComplianceAudit = require('../models/ComplianceAudit');
 const startTelemetrySimulator = require('../services/simulator');
+const { sendTelegramAlert, sendTelegramTest } = require('../services/telegramService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'h2-super-secret-plant-key-2026';
 
@@ -545,7 +546,18 @@ router.post('/alerts', async (req, res) => {
     if (req.app.get('io')) {
       req.app.get('io').emit('alert:new', alert);
     }
+    sendTelegramAlert(alert);
     res.status(201).json({ success: true, data: alert, vessel });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Telegram Notification Test Endpoint
+router.post('/notifications/test-telegram', async (req, res) => {
+  try {
+    const result = await sendTelegramTest(req.body);
+    res.json({ success: true, ...result });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

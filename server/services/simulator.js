@@ -1,6 +1,13 @@
 const Vessel = require('../models/Vessel');
 const Telemetry = require('../models/Telemetry');
 const Alert = require('../models/Alert');
+const { sendTelegramAlert } = require('./telegramService');
+
+const dispatchAlert = async (alert, io) => {
+  await alert.save();
+  if (io) io.emit('alert:new', alert);
+  sendTelegramAlert(alert);
+};
 
 let simTick = 0;
 let activeDrill = null;
@@ -91,9 +98,16 @@ const startTelemetrySimulator = (io) => {
 
       // Advance drill progress if active
       if (activeDrill) {
-        activeDrill.step += 1;
-        if (activeDrill.step >= activeDrill.totalSteps && activeDrill.phase === 'RAMPING_UP') {
-          activeDrill.phase = 'HOLDING';
+        if (activeDrill.phase === 'RAMPING_UP') {
+          activeDrill.step += 1;
+          if (activeDrill.step >= activeDrill.totalSteps) {
+            activeDrill.step = activeDrill.totalSteps;
+            activeDrill.phase = 'HOLDING';
+          }
+        } else if (activeDrill.phase === 'RESTORING') {
+          activeDrill.step += 1;
+        } else if (activeDrill.phase === 'HOLDING') {
+          activeDrill.holdSeconds = (activeDrill.holdSeconds || 0) + 3;
         }
       }
 
@@ -137,8 +151,7 @@ const startTelemetrySimulator = (io) => {
                 thresholdValue: `Warning: ${targetVessel.warningPressureBar} bar (MAWP: ${targetVessel.maxPressureBar} bar)`,
                 message: `VESSEL PRESSURE ESCALATING: H2-TNK-01 exceeded warning threshold (${targetVessel.warningPressureBar} bar) during compression cycle.`
               });
-              await alert.save();
-              if (io) io.emit('alert:new', alert);
+              await dispatchAlert(alert, io);
             }
 
             if (newPressure >= (targetVessel.maxPressureBar - 6) && !activeDrill.critAlertCreated) {
@@ -154,8 +167,7 @@ const startTelemetrySimulator = (io) => {
                 thresholdValue: `MAWP: ${targetVessel.maxPressureBar} bar`,
                 message: 'CRITICAL OVERPRESSURE IMMINENT: Vessel approaching Maximum Allowable Working Pressure. Automated venting required.'
               });
-              await alert.save();
-              if (io) io.emit('alert:new', alert);
+              await dispatchAlert(alert, io);
             }
           } else if (activeDrill.type === 'LEAK' && targetVessel.vesselId === activeDrill.targetVesselId) {
             // Smoothly ramp gas dispersion upward
@@ -176,8 +188,7 @@ const startTelemetrySimulator = (io) => {
                 thresholdValue: 'Threshold: 5.0% LEL',
                 message: 'Trace hydrogen dispersion detected around flange seal. Zone ventilation commanded.'
               });
-              await alert.save();
-              if (io) io.emit('alert:new', alert);
+              await dispatchAlert(alert, io);
             }
 
             if (newLel >= targetVessel.maxLelPercentage && !activeDrill.critAlertCreated) {
@@ -193,8 +204,7 @@ const startTelemetrySimulator = (io) => {
                 thresholdValue: `Ceiling: ${targetVessel.maxLelPercentage}% LEL`,
                 message: 'UNCONTROLLED FLAMMABLE DISPERSION: Perimeter optical barrier breached in Zone Alpha. Fire suppression armed.'
               });
-              await alert.save();
-              if (io) io.emit('alert:new', alert);
+              await dispatchAlert(alert, io);
             }
           } else if (activeDrill.type === 'SENSOR_FAIL' && targetVessel.vesselId === activeDrill.targetVesselId) {
             // Smoothly degrade sensor health
@@ -212,8 +222,7 @@ const startTelemetrySimulator = (io) => {
                 thresholdValue: 'Threshold: 80%',
                 message: 'Electrochemical sensor channel drift and heartbeat loss on manifold PT-401.'
               });
-              await alert.save();
-              if (io) io.emit('alert:new', alert);
+              await dispatchAlert(alert, io);
             }
           } else if (activeDrill.type === 'ESD_VENT' && targetVessel.maxPressureBar > 100) {
             targetVessel.reliefValveOpen = true;
@@ -231,8 +240,7 @@ const startTelemetrySimulator = (io) => {
                 thresholdValue: 'Manual Safety Interlock',
                 message: 'Emergency depressurization active. Venting high-pressure buffers toward flare header.'
               });
-              await alert.save();
-              if (io) io.emit('alert:new', alert);
+              await dispatchAlert(alert, io);
             }
           } else if (activeDrill.type === 'RESET') {
             // Resetting slowly brings plant back to normal over totalSteps
